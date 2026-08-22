@@ -1,0 +1,28 @@
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+*.user
+
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+*.suo
