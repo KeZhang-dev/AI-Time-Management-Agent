@@ -1,4 +1,4 @@
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -6,18 +6,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import type { TimeRecord } from "@/types/timeRecord";
-import { formatDisplay, formatDurationHours } from "@/lib/datetime";
-import { categoryChipClass } from "@/lib/categoryColor";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import type { TimeRecord } from '@/types/timeRecord';
+import { formatDisplay, formatDurationHours } from '@/lib/datetime';
+import { categoryChipClass } from '@/lib/categoryColor';
+import { cn } from '@/lib/utils';
 
 interface RecordsTableProps {
   records: TimeRecord[];
@@ -36,7 +36,7 @@ export function RecordsTable({ records, onEdit, onDelete }: RecordsTableProps) {
 
   return (
     <div className="rounded-lg border border-border bg-surface">
-      <Table>
+      <Table className="text-[15px]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Start</TableHead>
@@ -50,25 +50,44 @@ export function RecordsTable({ records, onEdit, onDelete }: RecordsTableProps) {
         <TableBody>
           {records.map((record) => (
             <TableRow key={record.id}>
-              <TableCell className="tabular-nums text-muted-foreground">{formatDisplay(record.startTime)}</TableCell>
-              <TableCell className="tabular-nums text-muted-foreground">{formatDisplay(record.endTime)}</TableCell>
+              <TableCell className="tabular-nums text-muted-foreground">
+                {formatDisplay(record.startTime)}
+              </TableCell>
+              <TableCell className="tabular-nums text-muted-foreground">
+                {formatDisplay(record.endTime)}
+              </TableCell>
               <TableCell className="tabular-nums text-muted-foreground">
                 {formatDurationHours(record.startTime, record.endTime)}
               </TableCell>
               <TableCell>
-                <span className={cn("chip", categoryChipClass(record.category))}>{record.category}</span>
+                <span
+                  className={cn('chip', categoryChipClass(record.category))}
+                >
+                  {record.category}
+                </span>
               </TableCell>
-              <TableCell className="max-w-60 truncate text-muted-foreground">{record.notes ?? "—"}</TableCell>
+              <TableCell className="max-w-60 truncate text-muted-foreground">
+                {record.notes ?? '—'}
+              </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon-sm" className="text-muted-foreground">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground"
+                    >
                       <MoreHorizontal className="size-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(record)}>Edit</DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onClick={() => onDelete(record)}>
+                    <DropdownMenuItem onClick={() => onEdit(record)}>
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => onDelete(record)}
+                    >
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>

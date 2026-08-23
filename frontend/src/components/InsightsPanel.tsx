@@ -1,5 +1,5 @@
-import type { StatsResponse } from "@/types/timeRecord";
-import { categoryBarColorVar } from "@/lib/categoryColor";
+import type { StatsResponse } from '@/types/timeRecord';
+import { categoryBarColorVar } from '@/lib/categoryColor';
 
 interface InsightsPanelProps {
   stats: StatsResponse | null;
@@ -28,8 +28,11 @@ export function InsightsPanel({ stats, error }: InsightsPanelProps) {
   return (
     <div className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface px-5 py-4.5">
       {stats.byCategory.map((c) => (
-        <div key={c.category} className="grid grid-cols-[minmax(0,120px)_1fr_64px] items-center gap-3.5">
-          <span className="truncate text-sm font-medium">{c.category}</span>
+        <div
+          key={c.category}
+          className="grid grid-cols-[minmax(0,120px)_1fr_64px] items-center gap-3.5"
+        >
+          <span className="truncate text-[15px] font-medium">{c.category}</span>
           <div className="h-1.75 overflow-hidden rounded-full border border-border bg-muted">
             <div
               className="h-full rounded-full"
@@ -39,7 +42,9 @@ export function InsightsPanel({ stats, error }: InsightsPanelProps) {
               }}
             />
           </div>
-          <span className="text-right text-sm tabular-nums text-muted-foreground">{c.totalHours.toFixed(1)}h</span>
+          <span className="text-right text-[15px] tabular-nums text-muted-foreground">
+            {c.totalHours.toFixed(1)}h
+          </span>
         </div>
       ))}
     </div>

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import * as api from "../api/timeRecords";
-import type { TimeRecord, TimeRecordInput } from "../types/timeRecord";
+import { useCallback, useEffect, useState } from 'react';
+import * as api from '../api/timeRecords';
+import type { TimeRecord, TimeRecordInput } from '../types/timeRecord';
 
 export function useTimeRecords() {
   const [records, setRecords] = useState<TimeRecord[]>([]);
@@ -14,7 +14,9 @@ export function useTimeRecords() {
       const data = await api.listTimeRecords();
       setRecords(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load time records.");
+      setError(
+        err instanceof Error ? err.message : 'Failed to load time records.',
+      );
     } finally {
       setLoading(false);
     }
@@ -48,5 +50,13 @@ export function useTimeRecords() {
     [refresh],
   );
 
-  return { records, loading, error, refresh, addRecord, editRecord, removeRecord };
+  return {
+    records,
+    loading,
+    error,
+    refresh,
+    addRecord,
+    editRecord,
+    removeRecord,
+  };
 }

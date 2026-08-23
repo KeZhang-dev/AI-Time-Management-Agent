@@ -3,6 +3,7 @@ namespace TimeTracker.Api.Models;
 public class TimeRecord
 {
     public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public DateTimeOffset StartTime { get; set; }
     public DateTimeOffset EndTime { get; set; }
     public string Category { get; set; } = string.Empty;

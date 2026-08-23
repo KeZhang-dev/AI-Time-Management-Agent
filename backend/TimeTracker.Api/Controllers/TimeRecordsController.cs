@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Api.Data;
@@ -6,6 +8,7 @@ using TimeTracker.Api.Models;
 
 namespace TimeTracker.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/time-records")]
 public class TimeRecordsController(AppDbContext db) : ControllerBase
@@ -16,7 +19,8 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         [FromQuery] DateTimeOffset? to,
         [FromQuery] string? category)
     {
-        var query = db.TimeRecords.AsNoTracking().AsQueryable();
+        var userId = GetUserId();
+        var query = db.TimeRecords.AsNoTracking().Where(r => r.UserId == userId);
 
         if (from is not null) query = query.Where(r => r.EndTime >= from);
         if (to is not null) query = query.Where(r => r.StartTime <= to);
@@ -33,7 +37,8 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<TimeRecordDto>> GetById(Guid id)
     {
-        var record = await db.TimeRecords.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+        var userId = GetUserId();
+        var record = await db.TimeRecords.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
         if (record is null) return NotFound();
         return Ok(ToDto(record));
     }
@@ -43,7 +48,8 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         [FromQuery] DateTimeOffset? from,
         [FromQuery] DateTimeOffset? to)
     {
-        var query = db.TimeRecords.AsNoTracking().AsQueryable();
+        var userId = GetUserId();
+        var query = db.TimeRecords.AsNoTracking().Where(r => r.UserId == userId);
 
         if (from is not null) query = query.Where(r => r.EndTime >= from);
         if (to is not null) query = query.Where(r => r.StartTime <= to);
@@ -73,6 +79,7 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         var record = new TimeRecord
         {
             Id = Guid.NewGuid(),
+            UserId = GetUserId(),
             StartTime = dto.StartTime,
             EndTime = dto.EndTime,
             Category = dto.Category,
@@ -92,7 +99,8 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         if (dto.EndTime <= dto.StartTime)
             return ValidationProblem("EndTime must be after StartTime.");
 
-        var record = await db.TimeRecords.FirstOrDefaultAsync(r => r.Id == id);
+        var userId = GetUserId();
+        var record = await db.TimeRecords.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
         if (record is null) return NotFound();
 
         record.StartTime = dto.StartTime;
@@ -109,7 +117,8 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var record = await db.TimeRecords.FirstOrDefaultAsync(r => r.Id == id);
+        var userId = GetUserId();
+        var record = await db.TimeRecords.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
         if (record is null) return NotFound();
 
         db.TimeRecords.Remove(record);
@@ -117,6 +126,8 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
 
         return NoContent();
     }
+
+    private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     private static TimeRecordDto ToDto(TimeRecord r) => new(
         r.Id, r.StartTime, r.EndTime, r.Category, r.Notes, r.CreatedAt, r.UpdatedAt);

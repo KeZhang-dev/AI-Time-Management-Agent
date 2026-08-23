@@ -49,6 +49,11 @@ dotnet run
 The API listens on `https://localhost:7267` (and `http://localhost:5224`). Swagger UI is
 available at `/swagger` in development.
 
+The frontend's `.env` expects the **HTTPS** port (7267), which `dotnet run` uses by default
+(the `https` launch profile). If running from Visual Studio, make sure the `https` profile is
+selected in the run dropdown, not `http` — otherwise only port 5224 comes up and the frontend
+will fail to connect.
+
 ### 3. Frontend
 
 ```
