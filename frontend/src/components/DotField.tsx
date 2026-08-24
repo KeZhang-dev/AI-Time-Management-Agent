@@ -51,7 +51,6 @@ const DotField = memo(
     ...rest
   }: DotFieldProps) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const svgRef = useRef<SVGSVGElement>(null);
     const glowRef = useRef<SVGCircleElement>(null);
     const dotsRef = useRef<Dot[]>([]);
     const mouseRef = useRef({
@@ -93,10 +92,6 @@ const DotField = memo(
       onResize: (metrics) => measureRef.current?.(metrics),
       onFrame: () => (drawRef.current ? drawRef.current() : false),
     });
-
-    const glowIdRef = useRef(
-      `dot-field-glow-${Math.random().toString(36).slice(2, 9)}`,
-    );
 
     useEffect(() => {
       const canvas = canvasRef.current;
@@ -344,31 +339,6 @@ const DotField = memo(
             height: '100%',
           }}
         />
-        <svg
-          ref={svgRef}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-          }}
-        >
-          <defs>
-            <radialGradient id={glowIdRef.current}>
-              <stop offset="0%" stopColor={glowColor} stopOpacity="1" />
-              <stop offset="100%" stopColor={glowColor} stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          <circle
-            ref={glowRef}
-            cx="-9999"
-            cy="-9999"
-            r={glowRadius}
-            fill={`url(#${glowIdRef.current})`}
-            style={{ opacity: 0, willChange: 'opacity' }}
-          />
-        </svg>
       </div>
     );
   },

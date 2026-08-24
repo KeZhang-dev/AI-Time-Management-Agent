@@ -4,6 +4,7 @@ import { AppBackground } from '@/components/AppBackground';
 import { LoggedOutNav } from '@/components/LoggedOutNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/context/AuthContext';
 
@@ -63,9 +64,8 @@ export function SignupPage() {
                         </div>
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="signup-password">Password</Label>
-                            <Input
+                            <PasswordInput
                                 id="signup-password"
-                                type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
@@ -74,9 +74,8 @@ export function SignupPage() {
                         </div>
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="signup-confirm-password">Confirm password</Label>
-                            <Input
+                            <PasswordInput
                                 id="signup-confirm-password"
-                                type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 required

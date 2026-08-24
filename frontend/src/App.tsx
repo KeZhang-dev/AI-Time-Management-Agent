@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import SplashCursor from '@/components/SplashCursor';
+import { Component as CursorFollower } from '@/components/ui/cursor-follower';
 import { HomePage } from '@/pages/HomePage';
 import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -14,7 +14,7 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <SplashCursor RAINBOW_MODE={false} COLOR="#A855F7" />
+                <CursorFollower />
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />

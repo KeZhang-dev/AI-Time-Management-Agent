@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import Orb from '@/components/Orb';
 import { AppBackground } from '@/components/AppBackground';
@@ -25,9 +25,13 @@ export function HomePage() {
                         time, identifies patterns and inefficiencies, and provides personalized strategies to
                         help you take control of your time and work more effectively.
                     </p>
-                    <Button size="lg" className="pointer-events-auto mt-10" asChild>
-                        <Link to="/dashboard">Get Started</Link>
-                    </Button>
+                    <Link
+                        to="/dashboard"
+                        className="pointer-events-auto mt-10 inline-flex items-center gap-2 text-lg font-bold text-[#A855F7] transition-colors hover:text-[#A855F7]/80"
+                    >
+                        Get Started
+                        <ArrowRight className="size-5" />
+                    </Link>
                 </div>
             </main>
 
