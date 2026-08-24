@@ -46,7 +46,7 @@ export function SignupPage() {
                 <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8">
                     <div className="mb-6 text-center">
                         <h1 className="text-xl font-semibold tracking-tight">Create an account</h1>
-                        <p className="mt-1 text-sm text-muted-foreground">Start tracking your time.</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Only email registration is supported in your region.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">

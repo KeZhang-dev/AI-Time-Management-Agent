@@ -43,8 +43,7 @@ export function LoginPage() {
             <main className="relative z-10 flex flex-1 flex-col items-center justify-center px-6">
                 <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8">
                     <div className="mb-6 text-center">
-                        <h1 className="text-xl font-semibold tracking-tight">Welcome back</h1>
-                        <p className="mt-1 text-sm text-muted-foreground">Log in to your Time Tracker account.</p>
+                        <h1 className="text-xl font-semibold tracking-tight">Welcome</h1>
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">

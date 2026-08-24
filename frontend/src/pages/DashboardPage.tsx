@@ -29,30 +29,32 @@ export function DashboardPage() {
 
     return (
         <AppLayout>
-            <main className="relative z-10 mx-auto max-w-270 flex-1 px-7 py-10 pb-20">
-                <h1 className="mb-4 text-2xl font-semibold tracking-tight">Overview</h1>
+            <main className="relative z-10 mx-4 flex-1 py-10 pb-20 sm:mx-8">
+                <div className="mx-auto max-w-270">
+                    <h1 className="mb-4 text-2xl font-semibold tracking-tight">Overview</h1>
 
-                <KpiRow stats={stats} recordCount={records.length} />
+                    <KpiRow stats={stats} recordCount={records.length} />
 
-                <section>
-                    <h2 className="mb-4 text-2xl font-semibold tracking-tight">Records</h2>
-                    {loading ? (
-                        <p className="text-sm text-muted-foreground">Loading…</p>
-                    ) : error ? (
-                        <p className="text-sm text-destructive">{error}</p>
-                    ) : (
-                        <RecordsTable
-                            records={records}
-                            onEdit={(record) => navigate(`/record/${record.id}`)}
-                            onDelete={setDeleteTarget}
-                        />
-                    )}
-                </section>
+                    <section>
+                        <h2 className="mb-4 text-2xl font-semibold tracking-tight">Records</h2>
+                        {loading ? (
+                            <p className="text-sm text-muted-foreground">Loading…</p>
+                        ) : error ? (
+                            <p className="text-sm text-destructive">{error}</p>
+                        ) : (
+                            <RecordsTable
+                                records={records}
+                                onEdit={(record) => navigate(`/record/${record.id}`)}
+                                onDelete={setDeleteTarget}
+                            />
+                        )}
+                    </section>
 
-                <section className="mt-11">
-                    <h2 className="mb-4 text-2xl font-semibold tracking-tight">Time Breakdown</h2>
-                    <InsightsPanel stats={stats} error={statsError} />
-                </section>
+                    <section className="mt-11">
+                        <h2 className="mb-4 text-2xl font-semibold tracking-tight">Time Breakdown</h2>
+                        <InsightsPanel stats={stats} error={statsError} />
+                    </section>
+                </div>
             </main>
 
             <DeleteRecordDialog

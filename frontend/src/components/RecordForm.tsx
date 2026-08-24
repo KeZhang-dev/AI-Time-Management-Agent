@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { TimeRecord, TimeRecordInput } from '@/types/timeRecord';
 import { fromDatetimeLocalValue, toDatetimeLocalValue } from '@/lib/datetime';
+import { cn } from '@/lib/utils';
 
 interface RecordFormProps {
     editingRecord?: TimeRecord | null;
@@ -16,6 +17,50 @@ function defaultDatetimeLocal(offsetMinutes = 0): string {
     const date = new Date(Date.now() + offsetMinutes * 60_000);
     date.setSeconds(0, 0);
     return toDatetimeLocalValue(date.toISOString());
+}
+
+function formatDurationShort(startValue: string, endValue: string): string {
+    if (!startValue || !endValue) return '—';
+    const startMs = new Date(startValue).getTime();
+    const endMs = new Date(endValue).getTime();
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) return '—';
+    const totalMinutes = Math.round((endMs - startMs) / 60_000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+}
+
+const fieldLabelClass = 'text-[11px] font-semibold uppercase tracking-widest text-muted-foreground';
+const ghostInputClass =
+    'h-auto border-0 border-b border-border bg-transparent px-3 py-1.5 shadow-none transition-colors focus-visible:border-b-ring focus-visible:ring-0';
+
+function TimeField({
+    label,
+    value,
+    onChange,
+    align = 'left',
+}: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    align?: 'left' | 'right';
+}) {
+    return (
+        <div className={cn('flex flex-1 flex-col gap-2.5', align === 'right' && 'sm:items-end')}>
+            <span className={fieldLabelClass}>{label}</span>
+            <Input
+                type="datetime-local"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                required
+                className={cn(
+                    ghostInputClass,
+                    'w-full text-xl font-semibold tracking-tight tabular-nums sm:text-2xl',
+                    align === 'right' && 'text-right',
+                )}
+            />
+        </div>
+    );
 }
 
 export function RecordForm({ editingRecord, onSubmit, onCancel }: RecordFormProps) {
@@ -71,55 +116,57 @@ export function RecordForm({ editingRecord, onSubmit, onCancel }: RecordFormProp
         }
     };
 
+    const durationLabel = formatDurationShort(startTime, endTime);
+
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex gap-3">
-                <div className="flex flex-1 flex-col gap-1.5">
-                    <Label htmlFor="record-start">Start</Label>
-                    <Input
-                        id="record-start"
-                        type="datetime-local"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        required
-                    />
+        <form
+            onSubmit={handleSubmit}
+            className="rounded-lg border border-border bg-surface px-6 py-8 sm:px-10 sm:py-10"
+        >
+            <section className="border-b border-border pb-8">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-12">
+                    <TimeField label="Start" value={startTime} onChange={setStartTime} />
+                    <TimeField label="End" value={endTime} onChange={setEndTime} align="right" />
                 </div>
-                <div className="flex flex-1 flex-col gap-1.5">
-                    <Label htmlFor="record-end">End</Label>
-                    <Input
-                        id="record-end"
-                        type="datetime-local"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        required
-                    />
+                <div className="mt-7 flex items-baseline gap-2">
+                    <span className={fieldLabelClass}>Duration</span>
+                    <span className="text-lg font-semibold tabular-nums text-primary">{durationLabel}</span>
                 </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-                <Label htmlFor="record-category">Category</Label>
+            </section>
+
+            <div className="flex flex-col gap-2.5 border-b border-border py-6">
+                <Label htmlFor="record-category" className={fieldLabelClass}>
+                    Category
+                </Label>
                 <Input
                     id="record-category"
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     placeholder="e.g. Work, Sleep, Exercise"
                     required
+                    className={cn(ghostInputClass, 'text-base font-medium')}
                 />
             </div>
-            <div className="flex flex-col gap-1.5">
-                <Label htmlFor="record-notes">Notes</Label>
+
+            <div className="flex flex-col gap-2.5 py-6">
+                <Label htmlFor="record-notes" className={fieldLabelClass}>
+                    Notes
+                </Label>
                 <Textarea
                     id="record-notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Optional"
-                    rows={3}
+                    placeholder="Add context for this block of time…"
+                    rows={7}
+                    className="field-sizing-fixed resize-none border-0 bg-transparent px-3 py-1 text-sm shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0"
                 />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <div className="mt-2 flex justify-end gap-2 border-t border-border pt-4">
+            {error && <p className="pt-1 text-sm text-destructive">{error}</p>}
+
+            <div className="mt-3 flex items-center justify-end gap-3 pt-4">
                 {onCancel && (
-                    <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
+                    <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
                         Cancel
                     </Button>
                 )}

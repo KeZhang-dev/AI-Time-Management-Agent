@@ -38,27 +38,24 @@ export function RecordPage() {
 
     return (
         <AppLayout>
-            <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-7 py-10 pb-20">
-                <h1 className="mb-1 text-2xl font-semibold tracking-tight">
-                    {id ? 'Edit record' : 'New record'}
-                </h1>
-                <p className="mb-6 text-sm text-muted-foreground">
-                    Log a block of time and what it was spent on.
-                </p>
+            <main className="relative z-10 mx-4 flex-1 py-14 pb-24 sm:mx-8">
+                <div className="mx-auto max-w-270">
+                    <h1 className="mb-12 text-center text-4xl font-semibold tracking-tight">
+                        {id ? 'Edit record' : 'Create your time record'}
+                    </h1>
 
-                {loading ? (
-                    <p className="text-sm text-muted-foreground">Loading…</p>
-                ) : loadError ? (
-                    <p className="text-sm text-destructive">{loadError}</p>
-                ) : (
-                    <div className="rounded-lg border border-border bg-surface p-6">
+                    {loading ? (
+                        <p className="text-sm text-muted-foreground">Loading…</p>
+                    ) : loadError ? (
+                        <p className="text-sm text-destructive">{loadError}</p>
+                    ) : (
                         <RecordForm
                             editingRecord={record}
                             onSubmit={handleSubmit}
                             onCancel={() => navigate('/dashboard')}
                         />
-                    </div>
-                )}
+                    )}
+                </div>
             </main>
         </AppLayout>
     );
