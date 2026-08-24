@@ -17,7 +17,7 @@ export function SolutionPage() {
                                 <Logo size={16} />
                             </div>
                             <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm leading-relaxed">
-                                Hi! I'm your Time Tracker assistant. Once connected, I'll help you understand
+                                Hi! I'm your KONER assistant. Once connected, I'll help you understand
                                 how you spend your time, spot patterns, and suggest ways to work more
                                 effectively. This is a preview of the chat interface — I can't respond just
                                 yet.

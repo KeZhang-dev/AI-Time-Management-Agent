@@ -8,7 +8,7 @@ export function LoggedOutNav() {
         <NavShell>
             <Link to="/" className="flex items-center gap-3">
                 <Logo />
-                <span className="text-lg font-medium tracking-wide">Time Tracker</span>
+                <span className="text-lg font-medium tracking-wide">KONER</span>
             </Link>
             <Button variant="outline" size="sm" asChild>
                 <Link to="/login">Login</Link>

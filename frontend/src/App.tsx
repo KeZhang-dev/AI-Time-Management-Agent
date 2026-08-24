@@ -1,7 +1,9 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import SplashCursor from '@/components/SplashCursor';
 import { HomePage } from '@/pages/HomePage';
+import { PrivacyPolicyPage } from '@/pages/PrivacyPolicyPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { SignupPage } from '@/pages/SignupPage';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -12,8 +14,10 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
+                <SplashCursor RAINBOW_MODE={false} COLOR="#A855F7" />
                 <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
                     <Route

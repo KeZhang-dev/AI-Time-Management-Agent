@@ -26,15 +26,15 @@ export function AppNav() {
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout();
         navigate('/');
+        logout();
     };
 
     return (
         <NavShell className="grid grid-cols-3">
             <Link to="/record" className="flex items-center gap-3 justify-self-start">
                 <Logo size={28} />
-                <span className="hidden text-lg font-medium tracking-wide sm:inline">Time Tracker</span>
+                <span className="hidden text-lg font-medium tracking-wide sm:inline">KONER</span>
             </Link>
 
             <nav className="flex items-center gap-1 justify-self-center">
