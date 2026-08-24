@@ -93,7 +93,7 @@ export function RecordPage() {
                                         type="button"
                                         size="lg"
                                         onClick={() => setShowManualForm(true)}
-                                        className="h-12 min-w-56 bg-[#A855F7] px-8 text-base text-white hover:bg-[#A855F7]/90"
+                                        className="h-12 min-w-56 bg-[#4E1782] px-8 text-base text-white hover:bg-[#A855F7]"
                                     >
                                         <Plus className="size-4" />
                                         Add new record

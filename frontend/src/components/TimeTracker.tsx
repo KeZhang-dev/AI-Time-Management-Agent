@@ -66,7 +66,7 @@ export function TimeTracker({ onSave }: TimeTrackerProps) {
 
     if (status === 'idle') {
         return (
-            <div className="rounded-lg border border-border bg-surface px-6 py-12 text-center sm:px-10 sm:py-16">
+            <div className="rounded-lg border-2 border-[#4E1782] bg-surface px-6 py-12 text-center sm:px-10 sm:py-16">
                 <p className="text-2xl font-semibold text-foreground">What are you working on?</p>
                 <Input
                     value={category}
@@ -89,7 +89,7 @@ export function TimeTracker({ onSave }: TimeTrackerProps) {
     }
 
     return (
-        <div className="rounded-lg border border-border bg-surface px-6 py-12 text-center sm:px-10 sm:py-16">
+        <div className="rounded-lg border-2 border-[#A855F7] bg-surface px-6 py-12 text-center sm:px-10 sm:py-16">
             <p className={cn(fieldLabelClass, status === 'running' && 'text-primary')}>
                 {status === 'running' ? 'Tracking' : 'Paused'}
             </p>
