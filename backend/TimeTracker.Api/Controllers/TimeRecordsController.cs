@@ -22,7 +22,7 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         var userId = GetUserId();
         var query = db.TimeRecords.AsNoTracking().Where(r => r.UserId == userId);
 
-        if (from is not null) query = query.Where(r => r.EndTime >= from);
+        if (from is not null) query = query.Where(r => r.EndTime == null || r.EndTime >= from);
         if (to is not null) query = query.Where(r => r.StartTime <= to);
         if (!string.IsNullOrWhiteSpace(category)) query = query.Where(r => r.Category == category);
 
@@ -51,21 +51,23 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         var userId = GetUserId();
         var query = db.TimeRecords.AsNoTracking().Where(r => r.UserId == userId);
 
-        if (from is not null) query = query.Where(r => r.EndTime >= from);
+        if (from is not null) query = query.Where(r => r.EndTime == null || r.EndTime >= from);
         if (to is not null) query = query.Where(r => r.StartTime <= to);
 
-        var records = await query.ToListAsync();
+        // Open records (no EndTime yet) have no known duration, so they're excluded
+        // from the hour totals below until they're completed.
+        var records = await query.Where(r => r.EndTime != null).ToListAsync();
 
         var byCategory = records
             .GroupBy(r => r.Category)
             .Select(g => new CategoryStatDto(
                 g.Key,
-                Math.Round(g.Sum(r => (r.EndTime - r.StartTime).TotalHours), 2),
+                Math.Round(g.Sum(r => (r.EndTime!.Value - r.StartTime).TotalHours), 2),
                 g.Count()))
             .OrderByDescending(c => c.TotalHours)
             .ToList();
 
-        var totalHours = Math.Round(records.Sum(r => (r.EndTime - r.StartTime).TotalHours), 2);
+        var totalHours = Math.Round(records.Sum(r => (r.EndTime!.Value - r.StartTime).TotalHours), 2);
 
         return Ok(new StatsResponseDto(from, to, totalHours, byCategory));
     }
@@ -73,7 +75,7 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TimeRecordDto>> Create(CreateTimeRecordDto dto)
     {
-        if (dto.EndTime <= dto.StartTime)
+        if (dto.EndTime is not null && dto.EndTime <= dto.StartTime)
             return ValidationProblem("EndTime must be after StartTime.");
 
         var record = new TimeRecord
@@ -96,7 +98,7 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<TimeRecordDto>> Update(Guid id, UpdateTimeRecordDto dto)
     {
-        if (dto.EndTime <= dto.StartTime)
+        if (dto.EndTime is not null && dto.EndTime <= dto.StartTime)
             return ValidationProblem("EndTime must be after StartTime.");
 
         var userId = GetUserId();

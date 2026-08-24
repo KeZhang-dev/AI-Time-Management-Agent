@@ -34,7 +34,7 @@ export function AppNav() {
         <NavShell className="grid grid-cols-3">
             <Link to="/record" className="flex items-center gap-3 justify-self-start">
                 <Logo size={28} />
-                <span className="hidden text-base font-medium tracking-wide sm:inline">Time Tracker</span>
+                <span className="hidden text-lg font-medium tracking-wide sm:inline">Time Tracker</span>
             </Link>
 
             <nav className="flex items-center gap-1 justify-self-center">
@@ -44,7 +44,7 @@ export function AppNav() {
                         to={item.to}
                         className={({ isActive }) =>
                             cn(
-                                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                                'rounded-full px-4 py-1.5 text-base font-medium transition-colors',
                                 isActive
                                     ? 'bg-accent text-foreground'
                                     : 'text-muted-foreground hover:text-foreground',
@@ -60,7 +60,7 @@ export function AppNav() {
                 {user && (
                     <DropdownMenu>
                         <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                            <span className="hidden text-sm font-medium text-muted-foreground sm:inline">
+                            <span className="hidden text-base font-medium text-muted-foreground sm:inline">
                                 {user.username}
                             </span>
                             <div className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">

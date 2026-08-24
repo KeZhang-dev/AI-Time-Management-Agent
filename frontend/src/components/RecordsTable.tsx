@@ -54,7 +54,11 @@ export function RecordsTable({ records, onEdit, onDelete }: RecordsTableProps) {
                 {formatDisplay(record.startTime)}
               </TableCell>
               <TableCell className="tabular-nums text-muted-foreground">
-                {formatDisplay(record.endTime)}
+                {record.endTime ? (
+                  formatDisplay(record.endTime)
+                ) : (
+                  <span className="text-primary">In progress</span>
+                )}
               </TableCell>
               <TableCell className="tabular-nums text-muted-foreground">
                 {formatDurationHours(record.startTime, record.endTime)}

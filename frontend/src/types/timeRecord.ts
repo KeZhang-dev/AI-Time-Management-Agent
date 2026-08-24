@@ -1,7 +1,7 @@
 export interface TimeRecord {
   id: string;
   startTime: string;
-  endTime: string;
+  endTime: string | null;
   category: string;
   notes: string | null;
   createdAt: string;
@@ -10,7 +10,7 @@ export interface TimeRecord {
 
 export interface TimeRecordInput {
   startTime: string;
-  endTime: string;
+  endTime: string | null;
   category: string;
   notes: string | null;
 }

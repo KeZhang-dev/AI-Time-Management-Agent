@@ -79,6 +79,9 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scrollbar-gutter: stable;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
