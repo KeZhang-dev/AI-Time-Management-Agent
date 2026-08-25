@@ -33,7 +33,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
             entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
             entity.Property(e => e.StartTime).HasColumnName("start_time").IsRequired();
-            entity.Property(e => e.EndTime).HasColumnName("end_time").IsRequired();
+            entity.Property(e => e.EndTime).HasColumnName("end_time");
             entity.Property(e => e.Category).HasColumnName("category").HasMaxLength(100).IsRequired();
             entity.Property(e => e.Notes).HasColumnName("notes");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
