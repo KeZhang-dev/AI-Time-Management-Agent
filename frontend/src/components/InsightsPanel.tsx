@@ -1,5 +1,6 @@
 import type { StatsResponse } from '@/types/timeRecord';
 import { categoryBarColorVar } from '@/lib/categoryColor';
+import { formatHoursAsClock } from '@/lib/datetime';
 
 interface InsightsPanelProps {
   stats: StatsResponse | null;
@@ -43,7 +44,7 @@ export function InsightsPanel({ stats, error }: InsightsPanelProps) {
             />
           </div>
           <span className="text-right text-[15px] tabular-nums text-muted-foreground">
-            {c.totalHours.toFixed(1)}h
+            {formatHoursAsClock(c.totalHours)}
           </span>
         </div>
       ))}

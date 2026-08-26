@@ -54,7 +54,7 @@ export function SolutionPage() {
     const chatInput = (
         <form
             onSubmit={handleSend}
-            className="flex items-end gap-3 rounded-2xl border border-border bg-surface px-5 py-4 shadow-[0_0_32px_-12px_oklch(0.66_0.21_305_/_0.35)]"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-5 py-3.5 shadow-[0_0_32px_-12px_oklch(0.66_0.21_305_/_0.35)]"
         >
             <textarea
                 value={draft}
@@ -62,7 +62,7 @@ export function SolutionPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask anything…"
                 rows={1}
-                className="max-h-40 flex-1 resize-none bg-transparent text-base outline-none placeholder:text-muted-foreground"
+                className="max-h-40 flex-1 resize-none bg-transparent py-1 leading-6 text-base outline-none placeholder:text-muted-foreground"
             />
             <Button type="submit" size="icon" disabled={submitting || !draft.trim()} className="shrink-0">
                 <Send className="size-4" />
@@ -128,7 +128,7 @@ export function SolutionPage() {
                             <p className="mt-3 text-base text-muted-foreground">
                                 Ask KONER about your time, habits, and productivity.
                             </p>
-                            <div className="mt-8 w-full sm:w-3/5 sm:min-w-[420px] sm:max-w-3xl">{chatInput}</div>
+                            <div className="mt-8 w-full sm:w-4/5 sm:min-w-[480px] sm:max-w-4xl">{chatInput}</div>
                             {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
                         </div>
                     </div>

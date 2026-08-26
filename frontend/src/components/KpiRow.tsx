@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { formatHoursAsClock } from '@/lib/datetime';
 import type { StatsResponse } from '@/types/timeRecord';
 
 interface KpiRowProps {
@@ -46,8 +47,7 @@ export function KpiRow({ stats, recordCount }: KpiRowProps) {
     <div className="mb-11 grid grid-cols-2 divide-x divide-border rounded-lg border border-border bg-surface px-5.5 sm:grid-cols-4">
       <Kpi
         label="Total tracked"
-        value={stats ? stats.totalHours.toFixed(1) : '—'}
-        unit="h"
+        value={stats ? formatHoursAsClock(stats.totalHours) : '—'}
       />
       <Kpi label="Records" value={recordCount} sub="all time" />
       <Kpi
@@ -60,7 +60,7 @@ export function KpiRow({ stats, recordCount }: KpiRowProps) {
         value={<span className="text-xl">{topCategory?.category ?? '—'}</span>}
         sub={
           topCategory
-            ? `${topCategory.totalHours.toFixed(1)}h · ${topCategoryShare}% of total`
+            ? `${formatHoursAsClock(topCategory.totalHours)} · ${topCategoryShare}% of total`
             : 'no data yet'
         }
       />

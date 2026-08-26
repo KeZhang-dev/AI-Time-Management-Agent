@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { CategoryField } from '@/components/CategoryField';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -233,13 +234,14 @@ export function RecordForm({ editingRecord, onSubmit, onCancel, variant = 'card'
                 <Label htmlFor="record-category" className={fieldLabelClass}>
                     Category
                 </Label>
-                <Input
+                <CategoryField
+                    key={editingRecord?.id ?? 'new'}
                     id="record-category"
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="e.g. Work, Sleep, Exercise"
+                    onChange={setCategory}
                     required
-                    className={cn(ghostInputClass, 'text-xl font-medium')}
+                    triggerClassName={cn(ghostInputClass, 'justify-between text-xl font-medium')}
+                    customClassName={cn(ghostInputClass, 'text-lg font-medium')}
                 />
             </div>
 
@@ -259,14 +261,21 @@ export function RecordForm({ editingRecord, onSubmit, onCancel, variant = 'card'
 
             {error && <p className="pt-1 text-base text-destructive">{error}</p>}
 
-            <div className="mt-3 flex items-center justify-end gap-3 pt-4">
+            <div className="mt-3 flex items-center gap-3 pt-4">
                 {onCancel && (
-                    <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        onClick={onCancel}
+                        disabled={submitting}
+                        className="flex-1"
+                    >
                         Cancel
                     </Button>
                 )}
-                <Button type="submit" disabled={submitting}>
-                    {editingRecord ? 'Save changes' : 'Save record'}
+                <Button type="submit" size="lg" disabled={submitting} className="flex-1">
+                    {editingRecord ? 'Save changes' : 'Save'}
                 </Button>
             </div>
         </form>

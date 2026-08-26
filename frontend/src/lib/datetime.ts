@@ -15,11 +15,20 @@ export function formatDisplay(isoString: string | null): string {
   return format(parseISO(isoString), 'yyyy-MM-dd HH:mm');
 }
 
+export function formatHoursAsClock(totalHours: number): string {
+  const totalMinutes = Math.max(0, Math.round(totalHours * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 export function formatDurationHours(startIso: string, endIso: string | null): string {
   if (!endIso) return '—';
   const hours =
     (parseISO(endIso).getTime() - parseISO(startIso).getTime()) / 3_600_000;
-  return `${hours.toFixed(2)}h`;
+  return formatHoursAsClock(hours);
 }
 
 export function formatElapsed(ms: number): string {
