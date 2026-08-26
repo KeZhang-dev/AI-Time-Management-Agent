@@ -15,6 +15,15 @@ export function formatDisplay(isoString: string | null): string {
   return format(parseISO(isoString), 'yyyy-MM-dd HH:mm');
 }
 
+export function formatCountdown(remainingMs: number): string {
+  const totalMinutes = Math.max(0, Math.ceil(remainingMs / 60_000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
 export function formatHoursAsClock(totalHours: number): string {
   const totalMinutes = Math.max(0, Math.round(totalHours * 60));
   const hours = Math.floor(totalMinutes / 60);
