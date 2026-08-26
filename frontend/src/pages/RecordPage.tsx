@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { RecordForm } from '@/components/RecordForm';
 import { TimeTracker } from '@/components/TimeTracker';
 import { Button } from '@/components/ui/button';
 import { createTimeRecord, getTimeRecord, updateTimeRecord } from '@/api/timeRecords';
+import { cn } from '@/lib/utils';
 import type { TimeRecord, TimeRecordInput } from '@/types/timeRecord';
 
 export function RecordPage() {
@@ -49,10 +50,10 @@ export function RecordPage() {
     };
 
     return (
-        <AppLayout fitViewport={!isEditing && !showManualForm}>
+        <AppLayout>
             <main className="relative z-10 mx-4 flex-1 py-14 pb-24 sm:mx-8">
-                <div className="mx-auto max-w-270">
-                    <h1 className="mb-12 text-center text-4xl font-semibold tracking-tight">
+                <div className="mx-auto flex max-w-270 flex-col gap-10">
+                    <h1 className="text-center text-4xl font-semibold tracking-tight">
                         {isEditing ? 'Edit record' : 'Create your time record'}
                     </h1>
 
@@ -70,25 +71,26 @@ export function RecordPage() {
                         <>
                             <TimeTracker onSave={handleSubmit} />
 
-                            {showManualForm ? (
-                                <section ref={manualFormRef} className="mt-10 scroll-mt-8">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowManualForm(false)}
-                                        className="mb-4 flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                                    >
-                                        <ArrowLeft className="size-4" />
-                                        Back to timer
-                                    </button>
-                                    <h2 className="mb-4 text-2xl font-semibold tracking-tight">Add new record</h2>
-                                    <RecordForm
-                                        editingRecord={null}
-                                        onSubmit={handleSubmit}
-                                        onCancel={() => setShowManualForm(false)}
-                                    />
-                                </section>
-                            ) : (
-                                <div className="mt-10 flex justify-center">
+                            <section
+                                ref={manualFormRef}
+                                className={cn(
+                                    'scroll-mt-8 rounded-lg border-2 border-[#4E1782] bg-surface transition-colors',
+                                    showManualForm
+                                        ? 'px-6 py-8 text-left sm:px-10 sm:py-10'
+                                        : 'flex min-h-64 items-center justify-center px-6 py-12 sm:min-h-80 sm:px-10 sm:py-16',
+                                )}
+                            >
+                                {showManualForm ? (
+                                    <div>
+                                        <h2 className="mb-6 text-2xl font-semibold tracking-tight">Add new record</h2>
+                                        <RecordForm
+                                            variant="bare"
+                                            editingRecord={null}
+                                            onSubmit={handleSubmit}
+                                            onCancel={() => setShowManualForm(false)}
+                                        />
+                                    </div>
+                                ) : (
                                     <Button
                                         type="button"
                                         size="lg"
@@ -98,8 +100,8 @@ export function RecordPage() {
                                         <Plus className="size-4" />
                                         Add new record
                                     </Button>
-                                </div>
-                            )}
+                                )}
+                            </section>
                         </>
                     )}
                 </div>

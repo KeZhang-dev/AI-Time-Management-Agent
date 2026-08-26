@@ -4,6 +4,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { askAi } from '@/api/ai';
+import { cn } from '@/lib/utils';
 
 interface ChatMessage {
     id: string;
@@ -11,19 +12,13 @@ interface ChatMessage {
     content: string;
 }
 
-const GREETING: ChatMessage = {
-    id: 'greeting',
-    role: 'assistant',
-    content:
-        "Hi! I'm your KONER assistant. Ask me about your tracked time — how you're spending it, " +
-        'which categories take up the most hours, or anything else your records can answer.',
-};
-
 export function SolutionPage() {
-    const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [draft, setDraft] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const hasConversation = messages.length > 0;
 
     const sendMessage = async () => {
         const question = draft.trim();
@@ -56,62 +51,88 @@ export function SolutionPage() {
         }
     };
 
+    const chatInput = (
+        <form
+            onSubmit={handleSend}
+            className="flex items-end gap-3 rounded-2xl border border-border bg-surface px-5 py-4 shadow-[0_0_32px_-12px_oklch(0.66_0.21_305_/_0.35)]"
+        >
+            <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask anything…"
+                rows={1}
+                className="max-h-40 flex-1 resize-none bg-transparent text-base outline-none placeholder:text-muted-foreground"
+            />
+            <Button type="submit" size="icon" disabled={submitting || !draft.trim()} className="shrink-0">
+                <Send className="size-4" />
+            </Button>
+        </form>
+    );
+
     return (
-        <AppLayout>
-            <main className="relative z-10 mx-auto flex w-full max-w-270 flex-1 flex-col px-7 pt-8 pb-6">
-                <div className="flex-1 overflow-y-auto">
-                    <div className="mx-auto flex max-w-2xl flex-col gap-4 py-6">
-                        {messages.map((message) =>
-                            message.role === 'assistant' ? (
-                                <div key={message.id} className="flex items-start gap-3">
-                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                                        <Logo size={16} />
-                                    </div>
-                                    <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm leading-relaxed">
-                                        {message.content}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div key={message.id} className="flex justify-end">
-                                    <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
-                                        {message.content}
-                                    </div>
-                                </div>
-                            ),
-                        )}
+        <AppLayout fitViewport>
+            <main
+                className={cn(
+                    'relative z-10 mx-auto flex h-full w-full max-w-270 flex-1 flex-col px-7 pb-6',
+                    hasConversation && 'pt-8',
+                )}
+            >
+                {hasConversation ? (
+                    <>
+                        <div className="min-h-0 flex-1 overflow-y-auto">
+                            <div className="mx-auto flex max-w-2xl flex-col gap-4 py-6">
+                                {messages.map((message) =>
+                                    message.role === 'assistant' ? (
+                                        <div key={message.id} className="flex items-start gap-3">
+                                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                                                <Logo size={16} />
+                                            </div>
+                                            <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm leading-relaxed">
+                                                {message.content}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div key={message.id} className="flex justify-end">
+                                            <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
+                                                {message.content}
+                                            </div>
+                                        </div>
+                                    ),
+                                )}
 
-                        {submitting && (
-                            <div className="flex items-start gap-3">
-                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                                    <Logo size={16} />
-                                </div>
-                                <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
-                                    Thinking…
-                                </div>
+                                {submitting && (
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                                            <Logo size={16} />
+                                        </div>
+                                        <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
+                                            Thinking…
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
 
-                <div className="mx-auto w-full max-w-2xl pt-4">
-                    <form
-                        onSubmit={handleSend}
-                        className="flex items-end gap-2 rounded-2xl border border-border bg-surface px-4 py-3"
-                    >
-                        <textarea
-                            value={draft}
-                            onChange={(e) => setDraft(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Ask about your time…"
-                            rows={1}
-                            className="max-h-40 flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                        />
-                        <Button type="submit" size="icon-sm" disabled={submitting || !draft.trim()} className="shrink-0">
-                            <Send className="size-4" />
-                        </Button>
-                    </form>
-                    {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
-                </div>
+                        <div className="mx-auto w-full max-w-2xl pt-4">
+                            {chatInput}
+                            {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex flex-1 flex-col items-center justify-center">
+                        <div className="flex w-full flex-col items-center text-center">
+                            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                                Ready when you are.
+                            </h1>
+                            <p className="mt-3 text-base text-muted-foreground">
+                                Ask KONER about your time, habits, and productivity.
+                            </p>
+                            <div className="mt-8 w-full sm:w-3/5 sm:min-w-[420px] sm:max-w-3xl">{chatInput}</div>
+                            {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
+                        </div>
+                    </div>
+                )}
             </main>
         </AppLayout>
     );

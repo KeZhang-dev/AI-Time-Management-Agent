@@ -11,6 +11,12 @@ interface RecordFormProps {
     editingRecord?: TimeRecord | null;
     onSubmit: (input: TimeRecordInput) => Promise<void>;
     onCancel?: () => void;
+    /**
+     * 'card' (default) renders its own bordered surface — used on the edit page.
+     * 'bare' drops that wrapper so the form can sit inside a parent section
+     * that already provides the border/background (e.g. the Add new record section).
+     */
+    variant?: 'card' | 'bare';
 }
 
 type EntryMode = 'end' | 'duration';
@@ -68,7 +74,7 @@ function TimeField({ label, value, onChange }: { label: string; value: string; o
     );
 }
 
-export function RecordForm({ editingRecord, onSubmit, onCancel }: RecordFormProps) {
+export function RecordForm({ editingRecord, onSubmit, onCancel, variant = 'card' }: RecordFormProps) {
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [entryMode, setEntryMode] = useState<EntryMode>('end');
@@ -146,7 +152,7 @@ export function RecordForm({ editingRecord, onSubmit, onCancel }: RecordFormProp
     return (
         <form
             onSubmit={handleSubmit}
-            className="rounded-lg border border-border bg-surface px-6 py-8 sm:px-10 sm:py-10"
+            className={cn(variant === 'card' && 'rounded-lg border border-border bg-surface px-6 py-8 sm:px-10 sm:py-10')}
         >
             <section className="border-b border-border pb-8">
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-12">

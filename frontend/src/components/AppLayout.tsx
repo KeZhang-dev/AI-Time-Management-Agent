@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { AppBackground } from '@/components/AppBackground';
-import { AppNav } from '@/components/AppNav';
+import { AppSidebar } from '@/components/AppSidebar';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -16,19 +16,21 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, fitViewport = false }: AppLayoutProps) {
     return (
-        <div
-            className={cn(
-                'relative flex flex-col text-foreground',
-                fitViewport ? 'h-svh overflow-hidden' : 'min-h-svh',
-            )}
-        >
+        <div className="relative flex min-h-svh text-foreground">
             <AppBackground />
-            <AppNav />
-            {fitViewport ? (
-                <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
-            ) : (
-                children
-            )}
+            <AppSidebar />
+            <div
+                className={cn(
+                    'relative z-10 flex min-w-0 flex-1 flex-col',
+                    fitViewport ? 'h-svh overflow-hidden' : 'min-h-svh',
+                )}
+            >
+                {fitViewport ? (
+                    <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+                ) : (
+                    children
+                )}
+            </div>
         </div>
     );
 }
