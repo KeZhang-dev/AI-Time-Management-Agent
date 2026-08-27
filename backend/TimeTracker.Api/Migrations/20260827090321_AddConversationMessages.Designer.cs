@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TimeTracker.Api.Data;
@@ -11,9 +12,11 @@ using TimeTracker.Api.Data;
 namespace TimeTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260827090321_AddConversationMessages")]
+    partial class AddConversationMessages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,7 +155,7 @@ namespace TimeTracker.Api.Migrations
 
                     b.ToTable("schedules", null, t =>
                         {
-                            t.HasCheckConstraint("ck_schedules_end_after_start", "end_time > start_time OR end_time = '00:00:00'");
+                            t.HasCheckConstraint("ck_schedules_end_after_start", "end_time > start_time");
                         });
                 });
 

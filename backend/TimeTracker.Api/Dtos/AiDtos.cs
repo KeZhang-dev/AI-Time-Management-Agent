@@ -16,5 +16,6 @@ public record AiAnalyzeRequestDto(
 
 public record AiAnalyzeResponseDto(
     string Response,
-    ScheduleProposalDto? Proposal = null
+    ScheduleProposalDto? Proposal = null,
+    ActivityOverviewDto? Overview = null
 );

@@ -11,10 +11,29 @@ public static class ScheduleValidation
     public const int MaxTotalHours = 16;
     public const int MaxDaysAhead = 14;
 
+    /// <summary>
+    /// Tolerance for the "must not start in the past" check, to absorb the few
+    /// seconds of real time that pass between reading the clock and this running
+    /// (plus HH:mm having no seconds of its own), without weakening the check
+    /// enough to miss a genuinely stale proposal like the reported 2+ hour gap.
+    /// </summary>
+    private const int PastStartGraceMinutes = 2;
+
+    private const int MinutesPerDay = 24 * 60;
+
+    /// <param name="currentTimeOfDay">
+    /// Pass the actual current local time to enforce "a plan for today can't start
+    /// in the past" - only meaningful at the moment a schedule is first staged
+    /// (ProposeScheduleTool). Pass null (the default) when re-validating at
+    /// approval time, since the user is expected to take some time to read a
+    /// proposal before clicking Apply, and that delay must not retroactively
+    /// invalidate an otherwise-valid schedule.
+    /// </param>
     public static string? Validate(
         DateOnly date,
         IReadOnlyList<(TimeOnly Start, TimeOnly End, string Activity)> items,
-        DateOnly today)
+        DateOnly today,
+        TimeOnly? currentTimeOfDay = null)
     {
         if (items.Count == 0)
             return "The schedule must contain at least one item.";
@@ -36,22 +55,48 @@ public static class ScheduleValidation
             if (item.Activity.Length > 200)
                 return "Activity text is too long (maximum 200 characters).";
 
-            if (item.End <= item.Start)
-                return $"Invalid time range for '{item.Activity}': end time must be after start time " +
-                       "(schedules cannot cross midnight in v1).";
+            if (EffectiveEndMinutes(item.End) <= StartMinutes(item.Start))
+                return $"Invalid time range for '{item.Activity}': end time must be after start time.";
         }
 
         var sorted = items.OrderBy(i => i.Start).ToList();
         for (var i = 1; i < sorted.Count; i++)
         {
-            if (sorted[i].Start < sorted[i - 1].End)
+            var previousEnd = EffectiveEndMinutes(sorted[i - 1].End);
+            if (StartMinutes(sorted[i].Start) < previousEnd)
                 return $"Schedule items overlap: '{sorted[i - 1].Activity}' and '{sorted[i].Activity}'.";
         }
 
-        var totalHours = (sorted[^1].End.ToTimeSpan() - sorted[0].Start.ToTimeSpan()).TotalHours;
-        if (totalHours > MaxTotalHours)
+        var totalMinutes = EffectiveEndMinutes(sorted[^1].End) - StartMinutes(sorted[0].Start);
+        if (totalMinutes / 60.0 > MaxTotalHours)
             return $"The schedule spans too many hours (maximum {MaxTotalHours}h).";
 
+        if (currentTimeOfDay is { } now && date == today)
+        {
+            var nowMinutes = Math.Max(0, StartMinutes(now) - PastStartGraceMinutes);
+            var earliestStart = sorted[0].Start;
+            if (StartMinutes(earliestStart) < nowMinutes)
+            {
+                return $"This plan is for today but starts at {earliestStart:HH:mm}, which is earlier " +
+                       $"than the current time ({now:HH:mm}). A schedule for today must start at or " +
+                       "after the current time - regenerate it using the current time as the starting point.";
+            }
+        }
+
         return null;
+    }
+
+    private static int StartMinutes(TimeOnly time) => time.Hour * 60 + time.Minute;
+
+    /// <summary>
+    /// A block's end time as minutes since the start of its day. An end time of
+    /// exactly midnight (00:00) means "runs to the end of the day", so it's treated
+    /// as 24:00 (1440) rather than 0 - this is what lets a schedule correctly cover
+    /// a window like 22:00-00:00 without looking like a zero/negative-length block.
+    /// </summary>
+    private static int EffectiveEndMinutes(TimeOnly end)
+    {
+        var minutes = end.Hour * 60 + end.Minute;
+        return minutes == 0 ? MinutesPerDay : minutes;
     }
 }

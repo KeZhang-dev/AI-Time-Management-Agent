@@ -59,7 +59,8 @@ public class ProposeScheduleTool(AppDbContext db) : IAgentTool
                         ["endTime"] = new Dictionary<string, object>
                         {
                             ["type"] = "string",
-                            ["description"] = "24-hour local time, format HH:mm.",
+                            ["description"] = "24-hour local time, format HH:mm. Use \"00:00\" if this " +
+                                "block runs until midnight.",
                         },
                         ["activity"] = new Dictionary<string, object>
                         {
@@ -111,9 +112,16 @@ public class ProposeScheduleTool(AppDbContext db) : IAgentTool
             parsedItems.Add((start, end, activity, string.IsNullOrWhiteSpace(reason) ? null : reason));
         }
 
-        var today = DateOnly.FromDateTime(DateTimeOffset.Now.Date);
+        // Server-local "now" (same closest-available-proxy convention as DateBoundaries),
+        // passed into Validate so a same-day plan is deterministically rejected if it
+        // starts in the past - this is the actual enforcement, not just a prompt hint.
+        var localNow = DateTimeOffset.Now;
+        var today = DateOnly.FromDateTime(localNow.Date);
         var validationError = ScheduleValidation.Validate(
-            date, parsedItems.Select(i => (i.Start, i.End, i.Activity)).ToList(), today);
+            date,
+            parsedItems.Select(i => (i.Start, i.End, i.Activity)).ToList(),
+            today,
+            TimeOnly.FromDateTime(localNow.DateTime));
 
         if (validationError is not null)
             return new { error = validationError };
