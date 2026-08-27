@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using TimeTracker.Api.Data;
 using TimeTracker.Api.Options;
 using TimeTracker.Api.Services;
+using TimeTracker.Api.Services.AiTools;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,14 @@ builder.Services.AddSingleton<JwtTokenService>();
 
 builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection("Gemini"));
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+
+builder.Services.AddScoped<IAgentTool, GetTodayRecordsTool>();
+builder.Services.AddScoped<IAgentTool, GetRecentRecordsTool>();
+builder.Services.AddScoped<IAgentTool, GetWeeklySummaryTool>();
+builder.Services.AddScoped<IAgentTool, GetCategoryBreakdownTool>();
+builder.Services.AddScoped<IAgentTool, GetRecordsByDateRangeTool>();
+builder.Services.AddScoped<AgentToolRegistry>();
+builder.Services.AddScoped<AiAgentService>();
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
