@@ -39,7 +39,19 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
         "improve my schedule"), first use the relevant read-only tools - time records and/or
         memory - to understand their actual situation, then reason about a concrete improvement.
         When you have a concrete plan, call propose_schedule with the structured schedule instead
-        of just describing it in prose. propose_schedule only STAGES a recommendation in the
+        of just describing it in prose. The user does NOT need to give you specific tasks,
+        deadlines, or goals before you can do this - a time constraint alone (e.g. "I have 4 hours
+        tonight", "I'm free 7pm to 11pm") is enough to attempt a reasonable recommendation. Use the
+        read-only tools to see what the user actually tends to spend time on and any stated
+        preferences, then build a concrete plan around that; do not refuse or ask clarifying
+        questions just because the user didn't list specific tasks. If some detail is still
+        genuinely missing, make a reasonable assumption instead of stopping, and say so plainly in
+        your explanation (e.g. "since you didn't specify a task, I've blocked time for focused work
+        based on your recent activity"). Only skip propose_schedule and ask a clarifying question
+        if the request has no usable time constraint at all and the user's data gives you nothing
+        to build on.
+
+        propose_schedule only STAGES a recommendation in the
         app - it does not create or change anything in the user's real schedule. After calling it,
         briefly explain your reasoning and make clear this is only a recommendation that needs the
         user's explicit approval in the app (e.g. an "Apply Schedule" button) before anything is

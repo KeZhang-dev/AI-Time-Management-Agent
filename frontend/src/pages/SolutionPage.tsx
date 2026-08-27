@@ -1,11 +1,12 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
-import { Send } from 'lucide-react';
+import { CalendarClock, Send } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { askAi } from '@/api/ai';
 import { approveScheduleProposal, cancelScheduleProposal } from '@/api/scheduleProposals';
 import type { ScheduleProposal } from '@/types/schedule';
+import { formatScheduleDate, formatTimeRangeDuration } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 
 type ProposalStatus = 'pending' | 'approved' | 'cancelled';
@@ -117,116 +118,162 @@ export function SolutionPage() {
     );
 
     return (
-        <AppLayout fitViewport>
+        <AppLayout>
             <main
                 className={cn(
-                    'relative z-10 mx-auto flex h-full w-full max-w-270 flex-1 flex-col px-7 pb-6',
+                    'relative z-10 mx-auto flex w-full max-w-270 flex-1 flex-col px-7 pb-6',
                     hasConversation && 'pt-8',
                 )}
             >
                 {hasConversation ? (
                     <>
-                        <div className="min-h-0 flex-1 overflow-y-auto">
-                            <div className="mx-auto flex max-w-2xl flex-col gap-4 py-6">
-                                {messages.map((message) =>
-                                    message.role === 'assistant' ? (
-                                        <div key={message.id} className="flex items-start gap-3">
-                                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                                                <Logo size={16} />
-                                            </div>
-                                            <div className="flex max-w-[80%] flex-col gap-3">
-                                                <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm leading-relaxed">
-                                                    {message.content}
-                                                </div>
-
-                                                {message.proposal && (
-                                                    <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3.5">
-                                                        <p className="text-[11px] font-medium tracking-wide text-primary uppercase">
-                                                            Recommended schedule · not yet applied
-                                                        </p>
-                                                        <p className="mt-1.5 text-sm font-semibold">
-                                                            {message.proposal.title}
-                                                            <span className="ml-2 font-normal text-muted-foreground">
-                                                                {message.proposal.date}
-                                                            </span>
-                                                        </p>
-
-                                                        <ul className="mt-3 space-y-2.5">
-                                                            {message.proposal.items.map((item, index) => (
-                                                                <li key={index} className="text-sm">
-                                                                    <span className="font-medium tabular-nums">
-                                                                        {item.startTime}–{item.endTime}
-                                                                    </span>{' '}
-                                                                    <span>{item.activity}</span>
-                                                                    {item.reason && (
-                                                                        <p className="mt-0.5 text-xs text-muted-foreground">
-                                                                            {item.reason}
-                                                                        </p>
-                                                                    )}
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-
-                                                        {message.proposalStatus === 'pending' && (
-                                                            <div className="mt-4 flex gap-2">
-                                                                <Button
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        void handleApprove(message.id, message.proposal!.proposalId)
-                                                                    }
-                                                                    disabled={resolvingProposalId === message.proposal.proposalId}
-                                                                >
-                                                                    Apply Schedule
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    onClick={() =>
-                                                                        void handleCancel(message.id, message.proposal!.proposalId)
-                                                                    }
-                                                                    disabled={resolvingProposalId === message.proposal.proposalId}
-                                                                >
-                                                                    Cancel
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                        {message.proposalStatus === 'approved' && (
-                                                            <p className="mt-4 text-sm font-medium text-primary">
-                                                                Schedule applied.
-                                                            </p>
-                                                        )}
-                                                        {message.proposalStatus === 'cancelled' && (
-                                                            <p className="mt-4 text-sm text-muted-foreground">
-                                                                Recommendation cancelled.
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div key={message.id} className="flex justify-end">
-                                            <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
-                                                {message.content}
-                                            </div>
-                                        </div>
-                                    ),
-                                )}
-
-                                {submitting && (
-                                    <div className="flex items-start gap-3">
+                        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 py-6">
+                            {messages.map((message) =>
+                                message.role === 'assistant' ? (
+                                    <div key={message.id} className="flex items-start gap-3">
                                         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
                                             <Logo size={16} />
                                         </div>
-                                        <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
-                                            Thinking…
+                                        <div className="flex max-w-[80%] flex-col gap-3">
+                                            <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm leading-relaxed">
+                                                {message.content}
+                                            </div>
+
+                                            {message.proposal && (
+                                                <div className="rounded-lg border border-primary/30 bg-primary/5 px-5 py-4.5">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                                                            <CalendarClock className="size-4 text-primary" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="text-[12px] font-bold tracking-widest text-primary uppercase">
+                                                                Recommended schedule · not yet applied
+                                                            </div>
+                                                            <div className="mt-1 flex items-baseline justify-between gap-3">
+                                                                <p className="truncate text-sm font-semibold text-foreground">
+                                                                    {message.proposal.title}
+                                                                </p>
+                                                                <p className="shrink-0 text-xs text-muted-foreground">
+                                                                    {formatScheduleDate(message.proposal.date)}
+                                                                </p>
+                                                            </div>
+
+                                                            <ol className="mt-4">
+                                                                {message.proposal.items.map((item, index) => {
+                                                                    const isLast =
+                                                                        index === message.proposal!.items.length - 1;
+                                                                    return (
+                                                                        <li key={index} className="flex gap-3">
+                                                                            <div className="flex flex-col items-center">
+                                                                                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                                                                                {!isLast && (
+                                                                                    <span className="w-px flex-1 bg-primary/25" />
+                                                                                )}
+                                                                            </div>
+                                                                            <div className={cn('min-w-0 flex-1', !isLast && 'pb-4')}>
+                                                                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                                                                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                                                                                        {item.startTime}–{item.endTime}
+                                                                                    </span>
+                                                                                    <span className="text-[11px] text-muted-foreground/70">
+                                                                                        {formatTimeRangeDuration(
+                                                                                            item.startTime,
+                                                                                            item.endTime,
+                                                                                        )}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <p className="mt-0.5 text-sm font-semibold text-foreground">
+                                                                                    {item.activity}
+                                                                                </p>
+                                                                                {item.reason && (
+                                                                                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                                                                                        {item.reason}
+                                                                                    </p>
+                                                                                )}
+                                                                            </div>
+                                                                        </li>
+                                                                    );
+                                                                })}
+                                                            </ol>
+
+                                                            {message.proposalStatus === 'pending' && (
+                                                                <>
+                                                                    <p className="mt-1 text-sm font-medium text-foreground">
+                                                                        Apply this schedule?
+                                                                    </p>
+                                                                    <div className="mt-2.5 flex gap-2">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={() =>
+                                                                                void handleApprove(
+                                                                                    message.id,
+                                                                                    message.proposal!.proposalId,
+                                                                                )
+                                                                            }
+                                                                            disabled={
+                                                                                resolvingProposalId ===
+                                                                                message.proposal.proposalId
+                                                                            }
+                                                                        >
+                                                                            Apply Schedule
+                                                                        </Button>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={() =>
+                                                                                void handleCancel(
+                                                                                    message.id,
+                                                                                    message.proposal!.proposalId,
+                                                                                )
+                                                                            }
+                                                                            disabled={
+                                                                                resolvingProposalId ===
+                                                                                message.proposal.proposalId
+                                                                            }
+                                                                        >
+                                                                            Cancel
+                                                                        </Button>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {message.proposalStatus === 'approved' && (
+                                                                <p className="mt-1 text-sm font-medium text-primary">
+                                                                    Schedule applied.
+                                                                </p>
+                                                            )}
+                                                            {message.proposalStatus === 'cancelled' && (
+                                                                <p className="mt-1 text-sm text-muted-foreground">
+                                                                    Recommendation cancelled.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                )}
-                            </div>
+                                ) : (
+                                    <div key={message.id} className="flex justify-end">
+                                        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground">
+                                            {message.content}
+                                        </div>
+                                    </div>
+                                ),
+                            )}
+
+                            {submitting && (
+                                <div className="flex items-start gap-3">
+                                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                                        <Logo size={16} />
+                                    </div>
+                                    <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
+                                        Thinking…
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="mx-auto w-full max-w-2xl pt-4">
+                        <div className="sticky bottom-0 mx-auto w-full max-w-2xl bg-background/85 pt-4 pb-6 backdrop-blur-sm">
                             {chatInput}
                             {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
                         </div>

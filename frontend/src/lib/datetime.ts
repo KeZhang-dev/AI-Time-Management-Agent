@@ -40,6 +40,17 @@ export function formatDurationHours(startIso: string, endIso: string | null): st
   return formatHoursAsClock(hours);
 }
 
+export function formatScheduleDate(dateOnly: string): string {
+  return format(parseISO(dateOnly), 'EEE, d MMM');
+}
+
+export function formatTimeRangeDuration(startTime: string, endTime: string): string {
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  const totalMinutes = endH * 60 + endM - (startH * 60 + startM);
+  return formatHoursAsClock(totalMinutes / 60);
+}
+
 export function formatElapsed(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);
