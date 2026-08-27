@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<TimeRecord> TimeRecords => Set<TimeRecord>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<Memory> Memories => Set<Memory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +47,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(e => e.Category);
             entity.HasIndex(e => e.StartTime);
+            entity.HasIndex(e => e.UserId);
+        });
+
+        modelBuilder.Entity<Memory>(entity =>
+        {
+            entity.ToTable("memories");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+            entity.Property(e => e.Content).HasColumnName("content").HasMaxLength(500).IsRequired();
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasIndex(e => e.UserId);
         });
     }

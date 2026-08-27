@@ -39,6 +39,8 @@ builder.Services.AddScoped<IAgentTool, GetRecentRecordsTool>();
 builder.Services.AddScoped<IAgentTool, GetWeeklySummaryTool>();
 builder.Services.AddScoped<IAgentTool, GetCategoryBreakdownTool>();
 builder.Services.AddScoped<IAgentTool, GetRecordsByDateRangeTool>();
+builder.Services.AddScoped<IAgentTool, GetUserMemoryTool>();
+builder.Services.AddScoped<IAgentTool, SaveUserMemoryTool>();
 builder.Services.AddScoped<AgentToolRegistry>();
 builder.Services.AddScoped<AiAgentService>();
 

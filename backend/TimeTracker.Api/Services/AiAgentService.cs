@@ -19,6 +19,16 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
         question does not require data (e.g. greetings or general questions about the app), answer
         directly without calling a tool. Be concise, specific, and encouraging. If the tools don't
         return enough information to answer, say so honestly rather than guessing.
+
+        You also have access to long-term memory about this user (get_user_memory and
+        save_user_memory). Memory holds stable, user-specific facts - preferences, recurring
+        habits, long-term goals - that can help you personalize your answer. Call get_user_memory
+        when it could plausibly help you tailor the response (for example, planning or advice
+        requests), but not for simple greetings or one-off factual lookups that don't need
+        personalization. Call save_user_memory only when the user shares something genuinely
+        durable about themselves, or explicitly asks you to remember something - never for
+        greetings, ordinary questions, temporary task details, raw conversation content, or
+        anything already retrievable via the time-record tools.
         """;
 
     public async Task<string> HandleUserMessageAsync(Guid userId, string userMessage, CancellationToken cancellationToken)
