@@ -32,8 +32,8 @@ public class AiController(IGeminiService geminiService, AiAgentService aiAgentSe
 
         try
         {
-            var responseText = await aiAgentService.HandleUserMessageAsync(userId, dto.Message, cancellationToken);
-            return Ok(new AiAnalyzeResponseDto(responseText));
+            var result = await aiAgentService.HandleUserMessageAsync(userId, dto.Message, cancellationToken);
+            return Ok(new AiAnalyzeResponseDto(result.ResponseText, result.Proposal));
         }
         catch (InvalidOperationException ex)
         {

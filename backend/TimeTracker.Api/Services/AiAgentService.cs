@@ -1,6 +1,10 @@
+using TimeTracker.Api.Dtos;
 using TimeTracker.Api.Services.AiTools;
 
 namespace TimeTracker.Api.Services;
+
+/// <summary>Result of one agent turn: the text reply, plus a staged schedule proposal if one was made.</summary>
+public record AiAgentResult(string ResponseText, ScheduleProposalDto? Proposal);
 
 /// <summary>
 /// Drives the tool-calling loop: sends the user's message to Gemini, executes
@@ -29,19 +33,33 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
         durable about themselves, or explicitly asks you to remember something - never for
         greetings, ordinary questions, temporary task details, raw conversation content, or
         anything already retrievable via the time-record tools.
+
+        You can also help the user improve their schedule. When they ask for planning or
+        scheduling help (e.g. "help me plan my evening", "suggest a schedule for tomorrow",
+        "improve my schedule"), first use the relevant read-only tools - time records and/or
+        memory - to understand their actual situation, then reason about a concrete improvement.
+        When you have a concrete plan, call propose_schedule with the structured schedule instead
+        of just describing it in prose. propose_schedule only STAGES a recommendation in the
+        app - it does not create or change anything in the user's real schedule. After calling it,
+        briefly explain your reasoning and make clear this is only a recommendation that needs the
+        user's explicit approval in the app (e.g. an "Apply Schedule" button) before anything is
+        saved. Never say the schedule has been applied, and never ask the user to just reply "yes"
+        in chat to approve it - approval happens through the app's UI, not through this
+        conversation, and you have no way to execute it yourself.
         """;
 
-    public async Task<string> HandleUserMessageAsync(Guid userId, string userMessage, CancellationToken cancellationToken)
+    public async Task<AiAgentResult> HandleUserMessageAsync(Guid userId, string userMessage, CancellationToken cancellationToken)
     {
         var history = new List<GeminiMessage> { GeminiMessage.FromText(GeminiRole.User, userMessage) };
         var tools = toolRegistry.Declarations;
+        ScheduleProposalDto? proposal = null;
 
         for (var iteration = 0; iteration < MaxToolIterations; iteration++)
         {
             var turn = await geminiService.GenerateContentAsync(history, tools, SystemInstruction, cancellationToken);
 
             if (turn is GeminiTurn.Text text)
-                return text.Content;
+                return new AiAgentResult(text.Content, proposal);
 
             var calls = ((GeminiTurn.FunctionCalls)turn).Calls;
 
@@ -61,6 +79,9 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
                     result = tool is null
                         ? new { error = $"Unknown tool '{call.Name}'." }
                         : await tool.ExecuteAsync(userId, call.Args, cancellationToken);
+
+                    if (call.Name == "propose_schedule" && result is ScheduleProposalDto proposalDto)
+                        proposal = proposalDto;
                 }
                 catch (Exception ex)
                 {
@@ -71,6 +92,8 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
             }
         }
 
-        return "I wasn't able to finish looking that up just now — could you try rephrasing your question?";
+        return new AiAgentResult(
+            "I wasn't able to finish looking that up just now — could you try rephrasing your question?",
+            proposal);
     }
 }

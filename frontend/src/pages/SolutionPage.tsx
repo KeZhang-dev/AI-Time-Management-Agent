@@ -4,12 +4,18 @@ import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { askAi } from '@/api/ai';
+import { approveScheduleProposal, cancelScheduleProposal } from '@/api/scheduleProposals';
+import type { ScheduleProposal } from '@/types/schedule';
 import { cn } from '@/lib/utils';
+
+type ProposalStatus = 'pending' | 'approved' | 'cancelled';
 
 interface ChatMessage {
     id: string;
     role: 'assistant' | 'user';
     content: string;
+    proposal?: ScheduleProposal;
+    proposalStatus?: ProposalStatus;
 }
 
 export function SolutionPage() {
@@ -17,6 +23,7 @@ export function SolutionPage() {
     const [draft, setDraft] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [resolvingProposalId, setResolvingProposalId] = useState<string | null>(null);
 
     const hasConversation = messages.length > 0;
 
@@ -30,12 +37,51 @@ export function SolutionPage() {
         setSubmitting(true);
 
         try {
-            const { response } = await askAi(question);
-            setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: response }]);
+            const { response, proposal } = await askAi(question);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: response,
+                    proposal: proposal ?? undefined,
+                    proposalStatus: proposal ? 'pending' : undefined,
+                },
+            ]);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to reach the assistant.');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const setProposalStatus = (messageId: string, status: ProposalStatus) => {
+        setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, proposalStatus: status } : m)));
+    };
+
+    const handleApprove = async (messageId: string, proposalId: string) => {
+        setError(null);
+        setResolvingProposalId(proposalId);
+        try {
+            await approveScheduleProposal(proposalId);
+            setProposalStatus(messageId, 'approved');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to apply the schedule.');
+        } finally {
+            setResolvingProposalId(null);
+        }
+    };
+
+    const handleCancel = async (messageId: string, proposalId: string) => {
+        setError(null);
+        setResolvingProposalId(proposalId);
+        try {
+            await cancelScheduleProposal(proposalId);
+            setProposalStatus(messageId, 'cancelled');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to cancel the proposal.');
+        } finally {
+            setResolvingProposalId(null);
         }
     };
 
@@ -88,8 +134,74 @@ export function SolutionPage() {
                                             <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
                                                 <Logo size={16} />
                                             </div>
-                                            <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm leading-relaxed">
-                                                {message.content}
+                                            <div className="flex max-w-[80%] flex-col gap-3">
+                                                <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3 text-sm leading-relaxed">
+                                                    {message.content}
+                                                </div>
+
+                                                {message.proposal && (
+                                                    <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3.5">
+                                                        <p className="text-[11px] font-medium tracking-wide text-primary uppercase">
+                                                            Recommended schedule · not yet applied
+                                                        </p>
+                                                        <p className="mt-1.5 text-sm font-semibold">
+                                                            {message.proposal.title}
+                                                            <span className="ml-2 font-normal text-muted-foreground">
+                                                                {message.proposal.date}
+                                                            </span>
+                                                        </p>
+
+                                                        <ul className="mt-3 space-y-2.5">
+                                                            {message.proposal.items.map((item, index) => (
+                                                                <li key={index} className="text-sm">
+                                                                    <span className="font-medium tabular-nums">
+                                                                        {item.startTime}–{item.endTime}
+                                                                    </span>{' '}
+                                                                    <span>{item.activity}</span>
+                                                                    {item.reason && (
+                                                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                                                            {item.reason}
+                                                                        </p>
+                                                                    )}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+
+                                                        {message.proposalStatus === 'pending' && (
+                                                            <div className="mt-4 flex gap-2">
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() =>
+                                                                        void handleApprove(message.id, message.proposal!.proposalId)
+                                                                    }
+                                                                    disabled={resolvingProposalId === message.proposal.proposalId}
+                                                                >
+                                                                    Apply Schedule
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() =>
+                                                                        void handleCancel(message.id, message.proposal!.proposalId)
+                                                                    }
+                                                                    disabled={resolvingProposalId === message.proposal.proposalId}
+                                                                >
+                                                                    Cancel
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                        {message.proposalStatus === 'approved' && (
+                                                            <p className="mt-4 text-sm font-medium text-primary">
+                                                                Schedule applied.
+                                                            </p>
+                                                        )}
+                                                        {message.proposalStatus === 'cancelled' && (
+                                                            <p className="mt-4 text-sm text-muted-foreground">
+                                                                Recommendation cancelled.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ) : (
