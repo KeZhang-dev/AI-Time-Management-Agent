@@ -75,7 +75,8 @@ public class ConversationController(AppDbContext db) : ControllerBase
             };
         }
 
-        return new ConversationMessageDto(message.Id, message.Role, message.Content, overview, proposalDto, proposalStatus);
+        return new ConversationMessageDto(
+            message.Id, message.Role, message.Content, message.CreatedAt, overview, proposalDto, proposalStatus);
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);

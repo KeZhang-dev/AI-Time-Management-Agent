@@ -14,6 +14,7 @@ public record ConversationMessageDto(
     Guid Id,
     string Role,
     string Content,
+    DateTimeOffset CreatedAt,
     ActivityOverviewDto? Overview,
     ScheduleProposalDto? Proposal,
     string? ProposalStatus

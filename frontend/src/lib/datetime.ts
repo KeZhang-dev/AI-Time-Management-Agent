@@ -51,6 +51,19 @@ export function formatTimeRangeDuration(startTime: string, endTime: string): str
   return formatHoursAsClock(totalMinutes / 60);
 }
 
+/**
+ * Start of the current local calendar day, as an ISO string. This is the app's
+ * shared 24-hour reset boundary — it only scopes what's *displayed* (Dashboard's
+ * today view, the Solution chat's visible conversation) and is recomputed on
+ * every load, so it naturally rolls over at midnight. It never deletes or
+ * modifies any underlying data, which remains fully intact and queryable
+ * (e.g. by the AI) regardless of what a given view chooses to show.
+ */
+export function startOfTodayIso(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+}
+
 export function formatElapsed(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);

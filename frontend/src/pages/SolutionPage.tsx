@@ -4,22 +4,107 @@ import ReactMarkdown from 'react-markdown';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { askAi } from '@/api/ai';
 import { getConversation } from '@/api/conversation';
 import { approveScheduleProposal, cancelScheduleProposal } from '@/api/scheduleProposals';
+import { useAuth } from '@/context/AuthContext';
 import type { ScheduleProposal } from '@/types/schedule';
 import type { ActivityOverview, ProposalStatus } from '@/types/conversation';
 import { formatHoursAsClock, formatScheduleDate, formatTimeRangeDuration } from '@/lib/datetime';
 import { categoryBarColorVar } from '@/lib/categoryColor';
+import { onNewChatRequested } from '@/lib/newChatSignal';
 import { cn } from '@/lib/utils';
 
 const CONTENT_MAX_WIDTH = 'max-w-3xl';
 const COMPOSER_MAX_TEXTAREA_HEIGHT = 200;
 
+/**
+ * A genuine rolling window - a message stays visible for a full 24 hours after
+ * it was sent, no matter what time of day it happened to be created. (An
+ * earlier version anchored this to local midnight instead, which meant a chat
+ * could vanish after being alive for as little as a few minutes if it started
+ * shortly before the boundary - that was the bug.)
+ */
+const ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const messagesCacheKey = (userId: string) => `koner-solution-messages:${userId}`;
+const resetKey = (userId: string) => `koner-solution-chat-reset-at:${userId}`;
+
+/**
+ * The actual root cause of the "disappears after Dashboard -> Solution" bug:
+ * SolutionPage fully unmounts on route change (a different <Route>), so all of
+ * its React state - including `messages` - is discarded. Coming back remounted
+ * a fresh component that had nothing to show until a brand-new network fetch
+ * completed, and if that fetch was ever slow, raced with something else, or
+ * failed, the user saw an empty chat instead. None of that was about the 24h
+ * math (which was already correct) - it was that the UI had no way to survive
+ * a remount without depending on the network.
+ *
+ * The fix: cache the currently-displayed conversation in localStorage (per
+ * user) and restore it *synchronously* when the component mounts, before any
+ * fetch happens. A remount is then instant and never empty. The server is
+ * still consulted in the background to reconcile (pick up the 24h/New Chat
+ * boundary, refreshed proposal statuses, etc.), but a failed or slow fetch can
+ * only leave the cached view as-is - it can never blank it out.
+ */
+function readCachedMessages(userId: string): ChatMessage[] | null {
+    try {
+        const raw = window.localStorage.getItem(messagesCacheKey(userId));
+        if (!raw) return null;
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed) ? (parsed as ChatMessage[]) : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeCachedMessages(userId: string, messages: ChatMessage[]): void {
+    try {
+        window.localStorage.setItem(messagesCacheKey(userId), JSON.stringify(messages));
+    } catch {
+        // Best-effort (private browsing, quota, etc.) - never block the UI for this.
+    }
+}
+
+/** 0 if this user has never triggered a reset (manual or automatic) yet. */
+function readLastResetMs(userId: string): number {
+    const stored = window.localStorage.getItem(resetKey(userId));
+    if (!stored) return 0;
+    const parsed = new Date(stored).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function buildTranscript(messages: { role: 'user' | 'assistant'; content: string }[]): string {
+    return messages.map((m) => `${m.role === 'user' ? 'User' : 'KONER'}: ${m.content}`).join('\n');
+}
+
+function buildSummaryInstruction(messages: { role: 'user' | 'assistant'; content: string }[], reason: string): string {
+    return (
+        `${reason} Review the transcript below and, only if there is something genuinely durable ` +
+        'worth remembering (a stated preference, a recurring habit, or a long-term goal), call ' +
+        'save_user_memory to save it - concise, one fact per call. Do not save temporary task ' +
+        "details, greetings, one-off requests, or the transcript itself. If nothing durable came " +
+        'up, don\'t call save_user_memory at all. Do not reply with a normal conversational message ' +
+        '- a brief acknowledgement is enough.\n\n--- Conversation transcript ---\n' +
+        buildTranscript(messages)
+    );
+}
+
 interface ChatMessage {
     id: string;
     role: 'assistant' | 'user';
     content: string;
+    createdAt: string;
     overview?: ActivityOverview;
     proposal?: ScheduleProposal;
     proposalStatus?: ProposalStatus;
@@ -107,44 +192,113 @@ function OverviewCard({ overview }: { overview: ActivityOverview }) {
 }
 
 export function SolutionPage() {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [historyLoaded, setHistoryLoaded] = useState(false);
+    const { user } = useAuth();
+    const userId = user?.id ?? null;
+
+    // Synchronous restore from cache - runs before the first paint, so a
+    // remount (e.g. Solution -> Dashboard -> Solution) never shows an empty
+    // or loading chat while a network fetch catches up. `null` means "never
+    // cached" (brand new session), which is the only case that still needs
+    // to wait on the initial fetch.
+    const [messages, setMessages] = useState<ChatMessage[]>(() => (userId ? (readCachedMessages(userId) ?? []) : []));
+    const [historyLoaded, setHistoryLoaded] = useState(() => (userId ? readCachedMessages(userId) !== null : false));
     const [draft, setDraft] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [resolvingProposalId, setResolvingProposalId] = useState<string | null>(null);
+    const [showNewChatConfirm, setShowNewChatConfirm] = useState(false);
+    const [startingNewChat, setStartingNewChat] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+    // Keep the cache in lockstep with whatever is actually on screen - every
+    // send, proposal-status update, reconciliation, or New Chat clear.
     useEffect(() => {
+        if (!userId) return;
+        writeCachedMessages(userId, messages);
+    }, [userId, messages]);
+
+    useEffect(() => {
+        if (!userId) return;
         let cancelled = false;
 
-        getConversation()
-            .then((rows) => {
+        (async () => {
+            try {
+                const rows = await getConversation();
                 if (cancelled) return;
+
+                // The Solution chat shows a message for a rolling 24 hours after it was
+                // sent, or until the user explicitly starts a new chat - whichever comes
+                // first. This only affects what's displayed here - nothing is deleted,
+                // and older messages (along with all TimeRecords, Memory, Schedules, and
+                // ScheduleProposals) remain fully intact and queryable.
+                const lastResetMs = readLastResetMs(userId);
+                const rollingBoundaryMs = Date.now() - ROLLING_WINDOW_MS;
+
+                // If the last reset (manual or automatic) is itself now more than 24h
+                // old, a new natural expiry window has opened: everything between that
+                // old reset point and today's rolling boundary just aged out. Summarize
+                // it to memory before it disappears, then advance the marker so this
+                // doesn't repeat on every subsequent load.
+                if (lastResetMs < rollingBoundaryMs) {
+                    const newlyExpired = rows.filter((row) => {
+                        const t = new Date(row.createdAt).getTime();
+                        return t >= lastResetMs && t < rollingBoundaryMs;
+                    });
+
+                    if (newlyExpired.length > 0) {
+                        try {
+                            await askAi(
+                                buildSummaryInstruction(
+                                    newlyExpired,
+                                    'This conversation is more than 24 hours old and is about to be cleared from view.',
+                                ),
+                            );
+                        } catch {
+                            // Best-effort - an automatic reset must never get stuck because
+                            // the summary call failed.
+                        }
+                        window.localStorage.setItem(resetKey(userId), new Date().toISOString());
+                    }
+                }
+
+                if (cancelled) return;
+
+                const boundaryMs = Math.max(readLastResetMs(userId), rollingBoundaryMs);
+                const currentRows = rows.filter((row) => new Date(row.createdAt).getTime() >= boundaryMs);
+
+                // This is a reconciliation, not the source of truth for "did my chat
+                // survive a remount" - that's already guaranteed by the synchronous
+                // cache restore above. This just brings the view up to date with
+                // anything the server knows that the cache doesn't yet (a message
+                // sent from another tab, a proposal Approved/Cancelled elsewhere, or
+                // an actual 24h/New Chat boundary having been crossed).
                 setMessages(
-                    rows.map((row) => ({
+                    currentRows.map((row) => ({
                         id: row.id,
                         role: row.role,
                         content: row.content,
+                        createdAt: row.createdAt,
                         overview: row.overview ?? undefined,
                         proposal: row.proposal ?? undefined,
                         proposalStatus: row.proposalStatus ?? undefined,
                     })),
                 );
-            })
-            .catch((err) => {
+            } catch (err) {
+                // Deliberately do NOT clear `messages` here. A failed background
+                // fetch must leave whatever is already cached/displayed untouched -
+                // that's the whole point of restoring from cache first.
                 if (!cancelled) {
-                    setError(err instanceof Error ? err.message : 'Failed to load conversation history.');
+                    setError(err instanceof Error ? err.message : 'Failed to refresh conversation history.');
                 }
-            })
-            .finally(() => {
+            } finally {
                 if (!cancelled) setHistoryLoaded(true);
-            });
+            }
+        })();
 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [userId]);
 
     // Auto-grow the composer to fit its content, capped at a reasonable max height -
     // this replaces the browser's default fixed-row textarea box (which showed a
@@ -156,14 +310,44 @@ export function SolutionPage() {
         el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_TEXTAREA_HEIGHT)}px`;
     }, [draft]);
 
+    // Triggered by the sidebar's "New Chat" button (only shown while on this page).
+    useEffect(() => onNewChatRequested(() => setShowNewChatConfirm(true)), []);
+
     const hasConversation = messages.length > 0;
+
+    const handleStartNewChat = async () => {
+        setStartingNewChat(true);
+        setError(null);
+
+        if (messages.length > 0) {
+            const summaryInstruction = buildSummaryInstruction(
+                messages,
+                'The user just clicked "New Chat", ending this conversation.',
+            );
+
+            try {
+                await askAi(summaryInstruction);
+            } catch {
+                // Best-effort: saving a memory summary should never block starting a new chat.
+                setError('Could not save a summary of that conversation to memory, but your new chat has started.');
+            }
+        }
+
+        if (userId) window.localStorage.setItem(resetKey(userId), new Date().toISOString());
+        setMessages([]);
+        setStartingNewChat(false);
+        setShowNewChatConfirm(false);
+    };
 
     const sendMessage = async () => {
         const question = draft.trim();
         if (!question || submitting) return;
 
         setError(null);
-        setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'user', content: question }]);
+        setMessages((prev) => [
+            ...prev,
+            { id: crypto.randomUUID(), role: 'user', content: question, createdAt: new Date().toISOString() },
+        ]);
         setDraft('');
         setSubmitting(true);
 
@@ -175,6 +359,7 @@ export function SolutionPage() {
                     id: crypto.randomUUID(),
                     role: 'assistant',
                     content: response,
+                    createdAt: new Date().toISOString(),
                     overview: overview ?? undefined,
                     proposal: proposal ?? undefined,
                     proposalStatus: proposal ? 'pending' : undefined,
@@ -436,6 +621,34 @@ export function SolutionPage() {
                     </div>
                 )}
             </main>
+
+            <AlertDialog
+                open={showNewChatConfirm}
+                onOpenChange={(open) => !startingNewChat && setShowNewChatConfirm(open)}
+            >
+                <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Start a new chat?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will end your current conversation and save any useful long-term
+                            details from it — like preferences, habits, or goals — to memory. Your time
+                            records, memory, and schedules stay exactly as they are.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={startingNewChat}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={startingNewChat}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                void handleStartNewChat();
+                            }}
+                        >
+                            {startingNewChat ? 'Starting…' : 'Start New Chat'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

@@ -19,6 +19,7 @@ export interface ConversationMessageDto {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  createdAt: string;
   overview: ActivityOverview | null;
   proposal: ScheduleProposal | null;
   proposalStatus: ProposalStatus | null;

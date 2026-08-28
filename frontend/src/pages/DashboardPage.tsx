@@ -8,19 +8,8 @@ import { InsightsPanel } from '@/components/InsightsPanel';
 import { TimeInsightCard } from '@/components/TimeInsightCard';
 import { useTimeRecords } from '@/hooks/useTimeRecords';
 import { getStats } from '@/api/timeRecords';
+import { startOfTodayIso } from '@/lib/datetime';
 import type { StatsResponse, TimeRecord } from '@/types/timeRecord';
-
-/**
- * Start of the current local calendar day, as an ISO string. This is the Dashboard's
- * 24-hour reset boundary — it only scopes which records are *displayed* here and is
- * recomputed on every refresh, so it naturally rolls over at midnight. It never
- * deletes or modifies the underlying time records, which remain fully intact and
- * queryable (e.g. by the AI) regardless of this view's daily reset.
- */
-function startOfTodayIso(): string {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
-}
 
 export function DashboardPage() {
     const navigate = useNavigate();

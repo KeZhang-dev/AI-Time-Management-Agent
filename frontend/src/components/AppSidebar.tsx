@@ -1,5 +1,5 @@
 import { useState, type ComponentType } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     ChevronsUpDown,
     ClipboardList,
@@ -8,6 +8,7 @@ import {
     LogOut,
     PanelLeft,
     PanelLeftClose,
+    Plus,
     Sparkles,
     User,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/AuthContext';
+import { requestNewChat } from '@/lib/newChatSignal';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -51,6 +53,7 @@ function getInitialCollapsed(): boolean {
 export function AppSidebar() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [collapsed, setCollapsed] = useState(getInitialCollapsed);
 
     const toggleCollapsed = () => {
@@ -105,25 +108,43 @@ export function AppSidebar() {
                 {NAV_ITEMS.map((item) => {
                     const Icon = item.icon;
                     return (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            title={collapsed ? item.label : undefined}
-                            className={({ isActive }) =>
-                                cn(
-                                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                                    collapsed && 'justify-center px-0',
-                                    isActive
-                                        ? 'bg-accent text-foreground'
-                                        : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
-                                )
-                            }
-                        >
-                            <span className="flex size-[18px] shrink-0 items-center justify-center">
-                                <Icon className="size-[18px]" />
-                            </span>
-                            {!collapsed && <span className="truncate">{item.label}</span>}
-                        </NavLink>
+                        <div key={item.to}>
+                            <NavLink
+                                to={item.to}
+                                title={collapsed ? item.label : undefined}
+                                className={({ isActive }) =>
+                                    cn(
+                                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                                        collapsed && 'justify-center px-0',
+                                        isActive
+                                            ? 'bg-accent text-foreground'
+                                            : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground',
+                                    )
+                                }
+                            >
+                                <span className="flex size-[18px] shrink-0 items-center justify-center">
+                                    <Icon className="size-[18px]" />
+                                </span>
+                                {!collapsed && <span className="truncate">{item.label}</span>}
+                            </NavLink>
+
+                            {item.to === '/solution' && location.pathname === '/solution' && (
+                                <button
+                                    type="button"
+                                    onClick={requestNewChat}
+                                    title={collapsed ? 'New Chat' : undefined}
+                                    className={cn(
+                                        'mt-1 flex w-full items-center gap-3 rounded-lg py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
+                                        collapsed ? 'justify-center px-0' : 'pl-9 pr-3',
+                                    )}
+                                >
+                                    <span className="flex size-4 shrink-0 items-center justify-center">
+                                        <Plus className="size-4" />
+                                    </span>
+                                    {!collapsed && <span className="truncate">New Chat</span>}
+                                </button>
+                            )}
+                        </div>
                     );
                 })}
             </nav>
