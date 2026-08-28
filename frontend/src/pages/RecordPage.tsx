@@ -6,7 +6,7 @@ import { RecordForm } from '@/components/RecordForm';
 import { TimeTracker } from '@/components/TimeTracker';
 import { Button } from '@/components/ui/button';
 import { createTimeRecord, getTimeRecord, updateTimeRecord } from '@/api/timeRecords';
-import { RECORD_CARD_HEIGHT_CLASS } from '@/lib/layout';
+import { GLASS_PANEL_CLASS, PANEL_BORDER_CLASS, RECORD_CARD_HEIGHT_CLASS } from '@/lib/layout';
 import { cn } from '@/lib/utils';
 import type { TimeRecord, TimeRecordInput } from '@/types/timeRecord';
 
@@ -90,7 +90,9 @@ export function RecordPage() {
 
                                 <section
                                     className={cn(
-                                        'flex flex-col rounded-lg border-2 border-[#4E1782] bg-surface transition-colors',
+                                        'flex flex-col rounded-lg transition-colors',
+                                        GLASS_PANEL_CLASS,
+                                        PANEL_BORDER_CLASS,
                                         RECORD_CARD_HEIGHT_CLASS,
                                     )}
                                 >
@@ -115,7 +117,7 @@ export function RecordPage() {
                                                 size="lg"
                                                 variant="outline"
                                                 onClick={() => setShowManualForm(true)}
-                                                className="h-12 min-w-56 border-2 border-[#4E1782] bg-transparent px-8 text-base text-[#4E1782] hover:bg-[#4E1782]/10 hover:text-[#A855F7]"
+                                                className="h-12 min-w-56 border-2 border-[#A855F7]/60 bg-[#4E1782]/15 px-8 text-base font-medium text-[#A855F7] transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
                                             >
                                                 <Plus className="size-4" />
                                                 Add new record

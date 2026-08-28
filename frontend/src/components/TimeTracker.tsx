@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useTimer } from '@/hooks/useTimer';
 import { formatElapsed } from '@/lib/datetime';
-import { RECORD_CARD_HEIGHT_CLASS } from '@/lib/layout';
+import { GLASS_PANEL_CLASS, PANEL_BORDER_CLASS, RECORD_CARD_HEIGHT_CLASS } from '@/lib/layout';
 import { cn } from '@/lib/utils';
 import type { TimeRecordInput } from '@/types/timeRecord';
 
@@ -69,7 +69,9 @@ export function TimeTracker({ onSave }: TimeTrackerProps) {
         return (
             <div
                 className={cn(
-                    'flex flex-col rounded-lg border-2 border-[#4E1782] bg-surface transition-colors',
+                    'flex flex-col rounded-lg transition-colors',
+                    GLASS_PANEL_CLASS,
+                    PANEL_BORDER_CLASS,
                     RECORD_CARD_HEIGHT_CLASS,
                 )}
             >
@@ -102,7 +104,9 @@ export function TimeTracker({ onSave }: TimeTrackerProps) {
     return (
         <div
             className={cn(
-                'flex flex-col rounded-lg border-2 border-[#A855F7] bg-surface transition-colors',
+                'flex flex-col rounded-lg transition-colors',
+                GLASS_PANEL_CLASS,
+                PANEL_BORDER_CLASS,
                 RECORD_CARD_HEIGHT_CLASS,
             )}
         >
