@@ -313,6 +313,20 @@ export function SolutionPage() {
     // Triggered by the sidebar's "New Chat" button (only shown while on this page).
     useEffect(() => onNewChatRequested(() => setShowNewChatConfirm(true)), []);
 
+    // Keep the viewport pinned to the latest message - both right after a
+    // restored conversation renders (e.g. Solution -> Dashboard -> Solution)
+    // and during normal chat (new message sent, reply arrives, "Thinking…"
+    // appears/disappears). The page scrolls at the document level (no inner
+    // overflow container), so this scrolls the whole window. requestAnimationFrame
+    // defers it until after the browser has actually laid out the update this
+    // effect is reacting to, rather than racing the render.
+    useEffect(() => {
+        const frame = requestAnimationFrame(() => {
+            window.scrollTo({ top: document.documentElement.scrollHeight });
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [messages, submitting, historyLoaded]);
+
     const hasConversation = messages.length > 0;
 
     const handleStartNewChat = async () => {
