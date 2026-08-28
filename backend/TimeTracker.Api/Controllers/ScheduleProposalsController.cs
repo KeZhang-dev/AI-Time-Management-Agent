@@ -80,14 +80,22 @@ public class ScheduleProposalsController(AppDbContext db) : ControllerBase
                 statusCode: StatusCodes.Status422UnprocessableEntity);
         }
 
+        const int MaxDescriptionLength = 500;
+
         var scheduleRows = items.Select(i => new Schedule
         {
             Id = Guid.NewGuid(),
             UserId = userId,
+            Title = proposal.Title,
             Date = proposal.Date,
             StartTime = TimeOnly.Parse(i.StartTime),
             EndTime = TimeOnly.Parse(i.EndTime),
             Activity = i.Activity,
+            // Reason is model-generated free text with no upstream length cap;
+            // the column has one, so never trust it to already fit.
+            Description = i.Reason is { Length: > MaxDescriptionLength }
+                ? i.Reason[..MaxDescriptionLength]
+                : i.Reason,
             ProposalId = proposal.Id,
             CreatedAt = now,
         }).ToList();

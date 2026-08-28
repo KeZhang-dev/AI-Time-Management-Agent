@@ -44,6 +44,10 @@ export function formatScheduleDate(dateOnly: string): string {
   return format(parseISO(dateOnly), 'EEE, d MMM');
 }
 
+export function formatCreatedDate(isoString: string): string {
+  return `Created ${format(parseISO(isoString), 'd MMM yyyy')}`;
+}
+
 export function formatTimeRangeDuration(startTime: string, endTime: string): string {
   const [startH, startM] = startTime.split(':').map(Number);
   const [endH, endM] = endTime.split(':').map(Number);

@@ -23,6 +23,7 @@ import type { ActivityOverview, ProposalStatus } from '@/types/conversation';
 import { formatHoursAsClock, formatScheduleDate, formatTimeRangeDuration } from '@/lib/datetime';
 import { categoryBarColorVar } from '@/lib/categoryColor';
 import { onNewChatRequested } from '@/lib/newChatSignal';
+import { notifyScheduleApplied } from '@/lib/scheduleAppliedSignal';
 import { cn } from '@/lib/utils';
 
 const CONTENT_MAX_WIDTH = 'max-w-3xl';
@@ -396,6 +397,7 @@ export function SolutionPage() {
         try {
             await approveScheduleProposal(proposalId);
             setProposalStatus(messageId, 'approved');
+            notifyScheduleApplied();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to apply the schedule.');
         } finally {

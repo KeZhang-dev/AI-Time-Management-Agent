@@ -82,10 +82,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(e => e.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
             entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(200).IsRequired().HasDefaultValue("Schedule");
             entity.Property(e => e.Date).HasColumnName("date").IsRequired();
             entity.Property(e => e.StartTime).HasColumnName("start_time").IsRequired();
             entity.Property(e => e.EndTime).HasColumnName("end_time").IsRequired();
             entity.Property(e => e.Activity).HasColumnName("activity").HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
             entity.Property(e => e.ProposalId).HasColumnName("proposal_id");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
 

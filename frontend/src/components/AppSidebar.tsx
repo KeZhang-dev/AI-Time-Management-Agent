@@ -1,6 +1,7 @@
-import { useState, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
+    CalendarClock,
     ChevronsUpDown,
     ClipboardList,
     HelpCircle,
@@ -13,6 +14,7 @@ import {
     User,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { ScheduleDetailModal } from '@/components/ScheduleDetailModal';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,9 +22,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { listAppliedSchedules } from '@/api/schedules';
 import { useAuth } from '@/context/AuthContext';
 import { requestNewChat } from '@/lib/newChatSignal';
+import { onScheduleApplied } from '@/lib/scheduleAppliedSignal';
 import { cn } from '@/lib/utils';
+import type { AppliedScheduleSummary } from '@/types/schedule';
 
 interface NavItem {
     to: string;
@@ -55,6 +60,23 @@ export function AppSidebar() {
     const navigate = useNavigate();
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+    const [schedules, setSchedules] = useState<AppliedScheduleSummary[]>([]);
+    const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+
+    const refreshSchedules = () => {
+        if (!user) return;
+        listAppliedSchedules()
+            .then(setSchedules)
+            .catch(() => {
+                /* sidebar list is non-critical - silently keep the previous state */
+            });
+    };
+
+    useEffect(() => {
+        refreshSchedules();
+        return onScheduleApplied(refreshSchedules);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
 
     const toggleCollapsed = () => {
         setCollapsed((prev) => {
@@ -70,6 +92,7 @@ export function AppSidebar() {
     };
 
     return (
+        <>
         <aside
             className={cn(
                 'sticky top-0 z-20 flex h-svh shrink-0 flex-col border-r border-border/60 bg-background/40 shadow-[6px_0_28px_-10px_oklch(0.66_0.21_305_/_0.25)] backdrop-blur-sm transition-[width] duration-200 ease-out',
@@ -144,6 +167,27 @@ export function AppSidebar() {
                                     {!collapsed && <span className="truncate">New Chat</span>}
                                 </button>
                             )}
+
+                            {item.to === '/solution' &&
+                                location.pathname === '/solution' &&
+                                !collapsed &&
+                                schedules.length > 0 && (
+                                    <div className="mt-2 flex flex-col gap-0.5 pl-9 pr-3">
+                                        {schedules.map((s) => (
+                                            <button
+                                                key={s.scheduleId}
+                                                type="button"
+                                                onClick={() => setSelectedScheduleId(s.scheduleId)}
+                                                className="flex items-center gap-2 rounded-md py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+                                            >
+                                                <CalendarClock className="size-3.5 shrink-0" />
+                                                <span className="truncate">
+                                                    Schedule-{String(s.number).padStart(2, '0')}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                         </div>
                     );
                 })}
@@ -194,5 +238,12 @@ export function AppSidebar() {
                 </div>
             )}
         </aside>
+
+        <ScheduleDetailModal
+            scheduleId={selectedScheduleId}
+            onOpenChange={(open) => !open && setSelectedScheduleId(null)}
+            onChanged={refreshSchedules}
+        />
+        </>
     );
 }
