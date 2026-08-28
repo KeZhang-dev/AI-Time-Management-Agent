@@ -1,13 +1,17 @@
 export const CATEGORY_OPTIONS = [
     'Work',
-    'Sleep',
-    'Exercise',
-    'Travel',
     'Study',
+    'Searching',
+    'Games',
+    'Videos',
+    'Sleep',
+    'Rest',
+    'Exercise',
     'Meals',
     'Social',
-    'Chores',
-    'Entertainment',
+    'Walk',
+    'Toilet',
+    'Shopping',
 ] as const;
 
 export const OTHER_CATEGORY = 'Other';
