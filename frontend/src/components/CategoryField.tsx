@@ -68,7 +68,7 @@ export function CategoryField({
                     </span>
                     <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align={align} className="min-w-40">
+                <DropdownMenuContent align={align} className="min-w-40 scrollbar-subtle">
                     {CATEGORY_OPTIONS.map((option) => (
                         <DropdownMenuItem key={option} onSelect={() => handleSelect(option)}>
                             {option}

@@ -40,6 +40,9 @@
   --chip-4-fg: oklch(0.8 0.1 340);
   --chip-5-bg: oklch(0.3 0.04 200);
   --chip-5-fg: oklch(0.78 0.08 200);
+
+  --scrollbar-thumb: oklch(0.4 0.01 296);
+  --scrollbar-thumb-hover: oklch(0.5 0.01 296);
 }
 
 @theme inline {
@@ -111,5 +114,25 @@
   .chip-5 {
     background-color: var(--chip-5-bg);
     color: var(--chip-5-fg);
+  }
+
+  /* Subtle, dark-theme-matched scrollbar for overflowing dropdown content
+     (e.g. the category picker) - transparent track, minimal grey thumb. */
+  .scrollbar-subtle {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 8px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+  .scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
   }
 }
