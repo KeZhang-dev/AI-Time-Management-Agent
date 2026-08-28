@@ -23,6 +23,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(50).IsRequired();
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash").IsRequired();
             entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(20).IsRequired().HasDefaultValue("User");
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired().HasDefaultValue("");
+            entity.Property(e => e.AvatarDataUrl).HasColumnName("avatar_data_url");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
 
             entity.HasIndex(e => e.Username).IsUnique();

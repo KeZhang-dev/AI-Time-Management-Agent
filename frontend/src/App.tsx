@@ -9,6 +9,7 @@ import { SignupPage } from '@/pages/SignupPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { RecordPage } from '@/pages/RecordPage';
 import { SolutionPage } from '@/pages/SolutionPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 
 function App() {
     return (
@@ -49,6 +50,14 @@ function App() {
                         element={
                             <ProtectedRoute>
                                 <SolutionPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/profile"
+                        element={
+                            <ProtectedRoute>
+                                <ProfilePage />
                             </ProtectedRoute>
                         }
                     />

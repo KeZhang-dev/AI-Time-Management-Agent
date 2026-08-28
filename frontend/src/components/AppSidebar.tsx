@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ScheduleDetailModal } from '@/components/ScheduleDetailModal';
+import { UserAvatar } from '@/components/UserAvatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -43,10 +44,6 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'koner-sidebar-collapsed';
-
-function initialsFor(username: string): string {
-    return username.slice(0, 2).toUpperCase();
-}
 
 function getInitialCollapsed(): boolean {
     if (typeof window === 'undefined') return false;
@@ -202,13 +199,15 @@ export function AppSidebar() {
                                 collapsed && 'justify-center px-0',
                             )}
                         >
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                                {initialsFor(user.username)}
-                            </div>
+                            <UserAvatar
+                                name={user.name || user.username}
+                                avatarDataUrl={user.avatarDataUrl}
+                                className="size-8 text-xs font-semibold"
+                            />
                             {!collapsed && (
                                 <>
                                     <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                                        {user.username}
+                                        {user.name || user.username}
                                     </p>
                                     <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
                                 </>
@@ -220,7 +219,7 @@ export function AppSidebar() {
                             sideOffset={8}
                             className="w-56"
                         >
-                            <DropdownMenuItem disabled>
+                            <DropdownMenuItem onClick={() => navigate('/profile')}>
                                 <User className="size-4" />
                                 Profile
                             </DropdownMenuItem>

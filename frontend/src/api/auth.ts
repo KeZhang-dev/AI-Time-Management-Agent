@@ -18,3 +18,17 @@ export function login(username: string, password: string): Promise<AuthResponse>
 export function getMe(): Promise<AuthUser> {
     return apiFetch<AuthUser>('/auth/me');
 }
+
+export function updateName(name: string): Promise<AuthUser> {
+    return apiFetch<AuthUser>('/auth/me/name', {
+        method: 'PUT',
+        body: JSON.stringify({ name }),
+    });
+}
+
+export function updateAvatar(avatarDataUrl: string): Promise<AuthUser> {
+    return apiFetch<AuthUser>('/auth/me/avatar', {
+        method: 'PUT',
+        body: JSON.stringify({ avatarDataUrl }),
+    });
+}

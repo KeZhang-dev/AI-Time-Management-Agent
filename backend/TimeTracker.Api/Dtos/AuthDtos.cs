@@ -15,10 +15,20 @@ public record LoginRequestDto(
 public record UserDto(
     Guid Id,
     string Username,
-    string Role
+    string Role,
+    string Name,
+    string? AvatarDataUrl
 );
 
 public record AuthResponseDto(
     string Token,
     UserDto User
+);
+
+public record UpdateNameRequestDto(
+    [Required, MinLength(1), MaxLength(100)] string Name
+);
+
+public record UpdateAvatarRequestDto(
+    [Required] string AvatarDataUrl
 );

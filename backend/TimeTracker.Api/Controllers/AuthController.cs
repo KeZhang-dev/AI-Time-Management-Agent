@@ -28,6 +28,7 @@ public class AuthController(AppDbContext db, JwtTokenService jwtTokenService) : 
             Username = username,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             Role = "User",
+            Name = username,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
@@ -61,5 +62,46 @@ public class AuthController(AppDbContext db, JwtTokenService jwtTokenService) : 
         return Ok(ToDto(user));
     }
 
-    private static UserDto ToDto(User u) => new(u.Id, u.Username, u.Role);
+    /// <summary>Profile display name only - never touches Username, the login identifier.</summary>
+    [Authorize]
+    [HttpPut("me/name")]
+    public async Task<ActionResult<UserDto>> UpdateName(UpdateNameRequestDto dto)
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return NotFound();
+
+        user.Name = dto.Name.Trim();
+        if (user.Name.Length == 0)
+            return ValidationProblem("Name cannot be empty.");
+
+        await db.SaveChangesAsync();
+        return Ok(ToDto(user));
+    }
+
+    // Data URLs are stored as-is (no separate blob storage exists yet) - capped
+    // well under Postgres's per-value limits, generous enough for a compressed
+    // profile photo without letting an unbounded payload bloat the users table.
+    private const int MaxAvatarDataUrlLength = 2_000_000;
+
+    [Authorize]
+    [HttpPut("me/avatar")]
+    public async Task<ActionResult<UserDto>> UpdateAvatar(UpdateAvatarRequestDto dto)
+    {
+        if (!dto.AvatarDataUrl.StartsWith("data:image/", StringComparison.Ordinal))
+            return ValidationProblem("Avatar must be an image data URL.");
+
+        if (dto.AvatarDataUrl.Length > MaxAvatarDataUrlLength)
+            return ValidationProblem("Avatar image is too large.");
+
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return NotFound();
+
+        user.AvatarDataUrl = dto.AvatarDataUrl;
+        await db.SaveChangesAsync();
+        return Ok(ToDto(user));
+    }
+
+    private static UserDto ToDto(User u) => new(u.Id, u.Username, u.Role, u.Name, u.AvatarDataUrl);
 }
