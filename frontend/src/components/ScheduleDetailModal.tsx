@@ -148,7 +148,7 @@ export function ScheduleDetailModal({ scheduleId, onOpenChange, onChanged }: Sch
                     onOpenChange(open);
                 }}
             >
-                <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+                <DialogContent className="max-h-[85vh] overflow-y-auto scrollbar-subtle sm:max-w-3xl">
                     <DialogHeader>
                         <div className="flex items-start gap-3">
                             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">

@@ -89,6 +89,15 @@
     @apply bg-background text-foreground;
     font-family: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   }
+
+  /* Native date/time pickers otherwise render with the browser's light-mode
+     chrome (calendar icon + popup) regardless of the app's own theme - this
+     tells the browser to draw them dark instead, matching KONER's palette. */
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    color-scheme: dark;
+  }
 }
 
 @layer components {
