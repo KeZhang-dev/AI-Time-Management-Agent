@@ -1,8 +1,4 @@
-<p align="center">
-  <img src="frontend/public/Time%20Tracker-svg.svg" alt="KONER logo" width="96" height="96" />
-</p>
-
-# KONER
+# <img src="frontend/public/Time%20Tracker-svg.svg" alt="KONER logo" width="28" height="28" valign="middle" /> KONER
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blueviolet)
 ![Frontend](https://img.shields.io/badge/frontend-React%2019%20%2B%20TypeScript-61DAFB?logo=react&logoColor=white)
