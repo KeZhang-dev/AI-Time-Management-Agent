@@ -63,6 +63,17 @@ export function formatTimeRangeDuration(startTime: string, endTime: string): str
  * modifies any underlying data, which remains fully intact and queryable
  * (e.g. by the AI) regardless of what a given view chooses to show.
  */
+/**
+ * Start of the local calendar day N days ago, as an ISO string - e.g. the
+ * Dashboard's "Recent records" cutoff. Same non-destructive display-only
+ * scoping as startOfTodayIso(): older records are never touched and remain
+ * fully queryable elsewhere (e.g. by the AI).
+ */
+export function daysAgoIso(days: number): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - days, 0, 0, 0, 0).toISOString();
+}
+
 export function startOfTodayIso(): string {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();

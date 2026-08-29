@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as api from '../api/timeRecords';
+import { daysAgoIso } from '../lib/datetime';
 import type { TimeRecord, TimeRecordInput } from '../types/timeRecord';
+
+const RECENT_RECORDS_WINDOW_DAYS = 7;
 
 export function useTimeRecords() {
   const [records, setRecords] = useState<TimeRecord[]>([]);
@@ -11,7 +14,7 @@ export function useTimeRecords() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.listTimeRecords();
+      const data = await api.listTimeRecords({ from: daysAgoIso(RECENT_RECORDS_WINDOW_DAYS) });
       setRecords(data);
     } catch (err) {
       setError(
