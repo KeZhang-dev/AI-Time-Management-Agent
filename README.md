@@ -10,7 +10,7 @@
 
 ---
 
-## Table of contents
+**Table of contents**
 
 1. [Overview](#1-overview)
 2. [Core Agent Workflow](#2-core-agent-workflow)
