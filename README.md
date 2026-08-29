@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/Time%20Tracker-svg.svg" alt="KONER logo" width="96" height="96" />
+</p>
+
 # KONER
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blueviolet)
@@ -354,7 +358,7 @@ I don't want to overstate what this is: it's not an autonomous, production-grade
 
 ## 17. Screenshots
 
-No screenshots are currently included in this repository. (The only existing visual asset is `frontend/public/TimeTracker-logo.png`.) This section is left as a placeholder for future UI screenshots of the Dashboard, Record page, and Solution chat.
+No screenshots are currently included in this repository beyond the KONER logo shown above (`frontend/public/Time Tracker-svg.svg`). This section is left as a placeholder for future UI screenshots of the Dashboard, Record page, and Solution chat.
 
 ---
 
