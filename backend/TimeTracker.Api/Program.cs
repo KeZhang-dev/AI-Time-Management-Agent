@@ -77,6 +77,7 @@ builder.Services.AddScoped<IAgentTool, ProposeScheduleTool>();
 builder.Services.AddScoped<IAgentTool, LogTimeActivityTool>();
 builder.Services.AddScoped<AgentToolRegistry>();
 builder.Services.AddScoped<SchedulePatternService>();
+builder.Services.AddScoped<ActiveSessionService>();
 builder.Services.AddScoped<AiAgentService>();
 builder.Services.AddScoped<CheckinSeedBuilder>();
 

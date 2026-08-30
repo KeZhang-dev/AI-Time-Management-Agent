@@ -24,6 +24,7 @@ public class AiAgentService(
     ILlmService llmService,
     AgentToolRegistry toolRegistry,
     SchedulePatternService schedulePatternService,
+    ActiveSessionService activeSessionService,
     ILogger<AiAgentService> logger)
 {
     // Headroom for: observation call(s) -> propose_schedule -> (possibly rejected by
@@ -118,10 +119,11 @@ public class AiAgentService(
     /// <summary>
     /// Rebuilt per request (not cached) so the injected clock reading is always fresh -
     /// this is what lets "I have 2 hours left" resolve against the actual current time
-    /// instead of a stale or generic default. Also appends a deterministic summary of how
-    /// this user's past schedules actually went (SchedulePatternService), when there's
-    /// enough evaluated history to say anything - this is what closes the schedule
-    /// feedback loop on every turn, not just the proactive daily check-in.
+    /// instead of a stale or generic default. Also appends two deterministic per-request
+    /// facts: how this user's past schedules actually went (SchedulePatternService), and
+    /// whether they currently have an open TimeRecord (ActiveSessionService) - the latter
+    /// is what lets the model close a session like Sleep after a multi-hour gap (e.g. the
+    /// laptop was closed) even though every read-only tool hides open records by design.
     /// </summary>
     private async Task<string> BuildSystemInstructionAsync(Guid userId, CancellationToken cancellationToken)
     {
@@ -134,6 +136,10 @@ public class AiAgentService(
         var patterns = await schedulePatternService.SummarizeRecentPatternsAsync(userId, cancellationToken);
         if (patterns is not null)
             instruction += "\n\n" + patterns;
+
+        var activeSession = await activeSessionService.DescribeActiveSessionAsync(userId, cancellationToken);
+        if (activeSession is not null)
+            instruction += "\n\n" + activeSession;
 
         return instruction;
     }
