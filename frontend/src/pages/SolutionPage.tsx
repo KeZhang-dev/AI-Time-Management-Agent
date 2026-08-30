@@ -14,7 +14,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { askAi } from '@/api/ai';
+import { askAi, checkIn } from '@/api/ai';
 import { getConversation } from '@/api/conversation';
 import { approveScheduleProposal, cancelScheduleProposal } from '@/api/scheduleProposals';
 import { useAuth } from '@/context/AuthContext';
@@ -209,7 +209,12 @@ export function SolutionPage() {
     const [resolvingProposalId, setResolvingProposalId] = useState<string | null>(null);
     const [showNewChatConfirm, setShowNewChatConfirm] = useState(false);
     const [startingNewChat, setStartingNewChat] = useState(false);
+    const [checkingIn, setCheckingIn] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    // Guards the proactive check-in from firing more than once per empty-conversation
+    // occurrence (route remounts, React 18 dev double-invoke) - reset explicitly whenever
+    // the conversation is deliberately emptied again (New Chat) so it can fire once more.
+    const checkinTriggeredRef = useRef(false);
 
     // Keep the cache in lockstep with whatever is actually on screen - every
     // send, proposal-status update, reconciliation, or New Chat clear.
@@ -301,6 +306,40 @@ export function SolutionPage() {
         };
     }, [userId]);
 
+    // Proactive daily check-in: instead of waiting for the user to type first, once history
+    // has finished loading and the conversation is genuinely empty (a fresh 24h window, a
+    // brand-new user, or right after "New Chat"), automatically ask the server to open the
+    // conversation - a sleep check-in question and/or today's overview. A failed check-in
+    // must never block the user from just typing, so it silently falls back to the normal
+    // empty-state screen (see the render below) rather than surfacing an error there.
+    useEffect(() => {
+        if (!historyLoaded || messages.length > 0 || checkinTriggeredRef.current) return;
+        checkinTriggeredRef.current = true;
+
+        (async () => {
+            setCheckingIn(true);
+            try {
+                const { response, proposal, overview } = await checkIn();
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: response,
+                        createdAt: new Date().toISOString(),
+                        overview: overview ?? undefined,
+                        proposal: proposal ?? undefined,
+                        proposalStatus: proposal ? 'pending' : undefined,
+                    },
+                ]);
+            } catch {
+                // Best-effort - fall through to the static "Ready when you are" screen.
+            } finally {
+                setCheckingIn(false);
+            }
+        })();
+    }, [historyLoaded, messages.length]);
+
     // Auto-grow the composer to fit its content, capped at a reasonable max height -
     // this replaces the browser's default fixed-row textarea box (which showed a
     // scrollbar as soon as text wrapped past one line).
@@ -349,6 +388,7 @@ export function SolutionPage() {
         }
 
         if (userId) window.localStorage.setItem(resetKey(userId), new Date().toISOString());
+        checkinTriggeredRef.current = false;
         setMessages([]);
         setStartingNewChat(false);
         setShowNewChatConfirm(false);
@@ -622,6 +662,15 @@ export function SolutionPage() {
                             {error && <p className="mt-2 text-center text-xs text-destructive">{error}</p>}
                         </div>
                     </>
+                ) : checkingIn ? (
+                    <div className="flex flex-1 flex-col items-center justify-center pb-32">
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                                <Logo size={16} />
+                            </div>
+                            Thinking…
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex flex-1 flex-col items-center justify-center pb-32">
                         <div className="flex w-full flex-col items-center text-center">

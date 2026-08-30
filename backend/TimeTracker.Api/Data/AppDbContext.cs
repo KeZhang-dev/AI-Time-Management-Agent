@@ -53,6 +53,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(e => e.Category);
             entity.HasIndex(e => e.StartTime);
             entity.HasIndex(e => e.UserId);
+
+            // Defense-in-depth for the "at most one open (in-progress) record per user"
+            // invariant - the real UX guard is the pre-check in TimeRecordsController and
+            // LogTimeActivityTool; this just makes the invariant unbreakable at the data
+            // layer even if a future code path forgets the check. This is a SECOND, distinct
+            // index over the same UserId property - EF Core only treats HasIndex calls on the
+            // same property list as distinct indexes when at least one is given an explicit
+            // name via this two-arg overload (otherwise the second call just reconfigures the
+            // first, which would silently drop the general index every UserId-filtered query
+            // in the app relies on).
+            entity.HasIndex(e => e.UserId, "ix_time_records_user_id_open")
+                .HasFilter("end_time IS NULL")
+                .IsUnique();
         });
 
         modelBuilder.Entity<Memory>(entity =>
@@ -118,6 +131,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
             entity.Property(e => e.ExpiresAt).HasColumnName("expires_at").IsRequired();
             entity.Property(e => e.ResolvedAt).HasColumnName("resolved_at");
+            entity.Property(e => e.OutcomeEvaluatedAt).HasColumnName("outcome_evaluated_at");
+            entity.Property(e => e.OutcomeSummaryJson).HasColumnName("outcome_summary_json").HasColumnType("jsonb");
 
             entity.HasOne<User>()
                 .WithMany()

@@ -14,3 +14,11 @@ export function askAi(message: string): Promise<AiAnalyzeResponse> {
     body: JSON.stringify({ message }),
   });
 }
+
+/**
+ * Proactive daily check-in - server composes the opening message (sleep check-in and/or
+ * today's overview) instead of the user typing first. Same response shape as askAi.
+ */
+export function checkIn(): Promise<AiAnalyzeResponse> {
+  return apiFetch<AiAnalyzeResponse>('/ai/checkin', { method: 'POST' });
+}

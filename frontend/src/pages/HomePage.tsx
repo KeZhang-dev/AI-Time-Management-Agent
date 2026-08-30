@@ -26,7 +26,7 @@ export function HomePage() {
                         help you take control of your time and work more effectively.
                     </p>
                     <Link
-                        to="/dashboard"
+                        to="/solution"
                         className="pointer-events-auto mt-10 inline-flex items-center gap-2 text-lg font-bold text-[#A855F7] transition-colors hover:text-[#A855F7]/80"
                     >
                         Get Started

@@ -38,9 +38,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+    { to: '/solution', label: 'Solution', icon: Sparkles },
     { to: '/record', label: 'Record', icon: ClipboardList },
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/solution', label: 'Solution', icon: Sparkles },
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'koner-sidebar-collapsed';

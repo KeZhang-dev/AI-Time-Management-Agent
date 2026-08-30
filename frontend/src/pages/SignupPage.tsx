@@ -30,7 +30,7 @@ export function SignupPage() {
         setSubmitting(true);
         try {
             await signup(username, password);
-            navigate('/dashboard');
+            navigate('/solution');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Sign up failed.');
         } finally {

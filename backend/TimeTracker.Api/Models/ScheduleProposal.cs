@@ -28,4 +28,15 @@ public class ScheduleProposal
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset ExpiresAt { get; set; }
     public DateTimeOffset? ResolvedAt { get; set; }
+
+    /// <summary>
+    /// Set once ScheduleOutcomeEvaluator has compared this plan's Schedule items against
+    /// the actual TimeRecords for its Date (only meaningful once Status is Approved and
+    /// Date is in the past). Lazily populated by CheckinSeedBuilder - null means "not
+    /// evaluated yet", not "nothing to evaluate".
+    /// </summary>
+    public DateTimeOffset? OutcomeEvaluatedAt { get; set; }
+
+    /// <summary>Serialized ScheduleOutcomeEvaluator.PlanOutcome, set alongside OutcomeEvaluatedAt.</summary>
+    public string? OutcomeSummaryJson { get; set; }
 }

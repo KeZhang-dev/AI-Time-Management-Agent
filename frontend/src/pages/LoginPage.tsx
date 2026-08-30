@@ -24,7 +24,7 @@ export function LoginPage() {
         setSubmitting(true);
         try {
             await login(username, password);
-            navigate('/dashboard');
+            navigate('/solution');
         } catch (err) {
             if (err instanceof ApiError && err.status === 401) {
                 setError('Invalid username or password.');

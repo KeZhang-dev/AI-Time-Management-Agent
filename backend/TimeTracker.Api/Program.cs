@@ -42,8 +42,10 @@ builder.Services.AddScoped<IAgentTool, GetRecordsByDateRangeTool>();
 builder.Services.AddScoped<IAgentTool, GetUserMemoryTool>();
 builder.Services.AddScoped<IAgentTool, SaveUserMemoryTool>();
 builder.Services.AddScoped<IAgentTool, ProposeScheduleTool>();
+builder.Services.AddScoped<IAgentTool, LogTimeActivityTool>();
 builder.Services.AddScoped<AgentToolRegistry>();
 builder.Services.AddScoped<AiAgentService>();
+builder.Services.AddScoped<CheckinSeedBuilder>();
 
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

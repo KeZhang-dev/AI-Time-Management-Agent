@@ -15,6 +15,7 @@ namespace TimeTracker.Api.Controllers;
 public class AiController(
     IGeminiService geminiService,
     AiAgentService aiAgentService,
+    CheckinSeedBuilder checkinSeedBuilder,
     AppDbContext db,
     ILogger<AiController> logger) : ControllerBase
 {
@@ -64,8 +65,48 @@ public class AiController(
         }
     }
 
+    /// <summary>
+    /// Proactive daily check-in: runs the same tool-calling loop as Analyze, but seeded
+    /// with a server-composed instruction instead of user-typed text (SolutionPage.tsx
+    /// calls this automatically when the user reaches an empty conversation, rather than
+    /// waiting for them to type first). The seed is never persisted or shown as a user
+    /// message - SaveTurnAsync only records the assistant's reply for this path.
+    /// </summary>
+    [HttpPost("checkin")]
+    public async Task<ActionResult<AiAnalyzeResponseDto>> Checkin(CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        var receivedAt = DateTimeOffset.UtcNow;
+
+        try
+        {
+            var seed = await checkinSeedBuilder.BuildSeedAsync(userId, cancellationToken);
+            var result = await aiAgentService.HandleUserMessageAsync(userId, seed, cancellationToken);
+
+            try
+            {
+                await SaveTurnAsync(userId, userMessage: null, receivedAt, result, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to persist check-in turn for user {UserId}", userId);
+            }
+
+            return Ok(new AiAnalyzeResponseDto(result.ResponseText, result.Proposal, result.Overview));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status502BadGateway);
+        }
+    }
+
+    /// <param name="userMessage">
+    /// Null for the automatic check-in path (Checkin) - only the assistant row is
+    /// persisted then, since the seed text was never something the user typed and must
+    /// never be rendered back to them as if it were.
+    /// </param>
     private async Task SaveTurnAsync(
-        Guid userId, string userMessage, DateTimeOffset userMessageAt, AiAgentResult result, CancellationToken cancellationToken)
+        Guid userId, string? userMessage, DateTimeOffset userMessageAt, AiAgentResult result, CancellationToken cancellationToken)
     {
         // The assistant row is always timestamped after the user row (real time elapses
         // during the Gemini call in between), so ordering by CreatedAt alone is enough
@@ -75,26 +116,32 @@ public class AiController(
         if (respondedAt <= userMessageAt)
             respondedAt = userMessageAt.AddTicks(1);
 
-        db.ConversationMessages.AddRange(
-            new ConversationMessage
+        var rows = new List<ConversationMessage>();
+
+        if (userMessage is not null)
+        {
+            rows.Add(new ConversationMessage
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 Role = ConversationRole.User,
                 Content = userMessage,
                 CreatedAt = userMessageAt,
-            },
-            new ConversationMessage
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                Role = ConversationRole.Assistant,
-                Content = result.ResponseText,
-                OverviewJson = result.Overview is null ? null : JsonSerializer.Serialize(result.Overview),
-                ProposalId = result.Proposal?.ProposalId,
-                CreatedAt = respondedAt,
             });
+        }
 
+        rows.Add(new ConversationMessage
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Role = ConversationRole.Assistant,
+            Content = result.ResponseText,
+            OverviewJson = result.Overview is null ? null : JsonSerializer.Serialize(result.Overview),
+            ProposalId = result.Proposal?.ProposalId,
+            CreatedAt = respondedAt,
+        });
+
+        db.ConversationMessages.AddRange(rows);
         await db.SaveChangesAsync(cancellationToken);
     }
 

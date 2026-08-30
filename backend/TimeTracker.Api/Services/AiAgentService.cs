@@ -54,6 +54,19 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
         greetings, ordinary questions, temporary task details, raw conversation content, or
         anything already retrievable via the time-record tools.
 
+        You also have log_time_activity, to start, stop, or retroactively log the user's own
+        tracked activity when they tell you about it in natural language - e.g. "I'm going to
+        study now" (action "start"), "I'm heading out" or "I'm done for now" (action "stop"),
+        or "I went to bed at 11:15 and woke up at 8:50" (action "log", category "Sleep"). Call
+        it whenever the user is clearly describing something they are doing, about to do, or
+        just finished doing in real time - not for hypothetical questions ("what if I studied
+        for two hours?") or requests to just look something up. This creates or closes a plain
+        TimeRecord - it is operational tracking state, completely separate from long-term
+        memory, so never call save_user_memory for this, even if the activity sounds like a
+        habit worth remembering. When logging an overnight span like sleep, if the stated
+        bedtime is evening/night and the wake time is numerically earlier in the day, it spans
+        midnight: use yesterday's date for startTime and today's date for endTime.
+
         You can also help the user improve their schedule. When they ask for planning or
         scheduling help (e.g. "help me plan my evening", "suggest a schedule for tomorrow",
         "improve my schedule"), first use the relevant read-only tools - time records and/or
@@ -70,6 +83,16 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
         based on your recent activity"). Only skip propose_schedule and ask a clarifying question
         if the request has no usable time constraint at all and the user's data gives you nothing
         to build on.
+
+        Build realistic plans, not a mechanical division of the available time into equal
+        generic blocks. Favor session lengths that match how the user actually works (commonly
+        25-90 focused minutes before a break, shorter for anything the data suggests they
+        struggle to sustain), include short breaks or a change of activity between longer
+        blocks, and vary block length and activity based on what get_user_memory and the
+        time-record tools tell you about this specific user - including any pattern noted from
+        how past schedules actually went (e.g. a block that's repeatedly cut short). Give each
+        block a brief reason tied to that evidence, not a generic label. End your explanation by
+        asking "Create this schedule?" so the user knows a decision is needed.
 
         propose_schedule only STAGES a recommendation in the
         app - it does not create or change anything in the user's real schedule. After calling it,

@@ -78,6 +78,9 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         if (dto.EndTime is not null && dto.EndTime <= dto.StartTime)
             return ValidationProblem("EndTime must be after StartTime.");
 
+        if (dto.EndTime is null && await HasOpenRecordAsync(GetUserId()))
+            return ValidationProblem("You already have an in-progress record. Stop it before starting another.");
+
         var record = new TimeRecord
         {
             Id = Guid.NewGuid(),
@@ -105,6 +108,11 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
         var record = await db.TimeRecords.FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);
         if (record is null) return NotFound();
 
+        // Only guard when this edit newly opens the record (it wasn't already the open
+        // one) - editing an already-open record's other fields must not trip over itself.
+        if (dto.EndTime is null && record.EndTime is not null && await HasOpenRecordAsync(userId))
+            return ValidationProblem("You already have an in-progress record. Stop it before starting another.");
+
         record.StartTime = dto.StartTime;
         record.EndTime = dto.EndTime;
         record.Category = dto.Category;
@@ -130,6 +138,9 @@ public class TimeRecordsController(AppDbContext db) : ControllerBase
     }
 
     private Guid GetUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private Task<bool> HasOpenRecordAsync(Guid userId) =>
+        db.TimeRecords.AnyAsync(r => r.UserId == userId && r.EndTime == null);
 
     private static TimeRecordDto ToDto(TimeRecord r) => new(
         r.Id, r.StartTime, r.EndTime, r.Category, r.Notes, r.CreatedAt, r.UpdatedAt);
