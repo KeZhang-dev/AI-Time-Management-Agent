@@ -7,6 +7,7 @@ using TimeTracker.Api.Data;
 using TimeTracker.Api.Options;
 using TimeTracker.Api.Services;
 using TimeTracker.Api.Services.AiTools;
+using TimeTracker.Api.Services.Scheduling;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,7 @@ builder.Services.AddScoped<IAgentTool, SaveUserMemoryTool>();
 builder.Services.AddScoped<IAgentTool, ProposeScheduleTool>();
 builder.Services.AddScoped<IAgentTool, LogTimeActivityTool>();
 builder.Services.AddScoped<AgentToolRegistry>();
+builder.Services.AddScoped<SchedulePatternService>();
 builder.Services.AddScoped<AiAgentService>();
 builder.Services.AddScoped<CheckinSeedBuilder>();
 

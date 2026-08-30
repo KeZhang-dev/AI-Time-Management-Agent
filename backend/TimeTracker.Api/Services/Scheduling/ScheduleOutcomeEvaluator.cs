@@ -106,6 +106,28 @@ public static class ScheduleOutcomeEvaluator
         return new PlanOutcome(proposalId, date, title, items, Math.Round(overallAdherence, 2));
     }
 
+    /// <summary>
+    /// Collapses the 4-state ItemAdherence down to the simple 3-word vocabulary
+    /// (Followed / Partially followed / Not followed) for anything user- or model-facing.
+    /// Diverged (did something else instead) and Skipped (nothing tracked at all) are both
+    /// "Not followed" under that vocabulary - the richer distinction stays available via
+    /// DivergedInto/DivergedFraction for detail text, this just controls the label.
+    /// </summary>
+    public static string OutcomeLabel(ItemAdherence adherence) => adherence switch
+    {
+        ItemAdherence.Followed => "Followed",
+        ItemAdherence.PartiallyFollowed => "Partially followed",
+        _ => "Not followed",
+    };
+
+    /// <summary>Same 3-word vocabulary, applied to a whole plan's OverallAdherence fraction.</summary>
+    public static string OverallOutcomeLabel(double overallAdherence) => overallAdherence switch
+    {
+        >= FollowedThreshold => "Followed",
+        > 0 => "Partially followed",
+        _ => "Not followed",
+    };
+
     private static int StartMinutes(TimeOnly time) => time.Hour * 60 + time.Minute;
 
     /// <summary>Mirrors ScheduleValidation's convention: an end time of exactly midnight

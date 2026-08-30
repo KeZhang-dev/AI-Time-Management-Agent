@@ -144,7 +144,12 @@ public class CheckinSeedBuilder(AppDbContext db)
         if (due.Count == 0)
             return null;
 
-        var now = DateTimeOffset.Now;
+        // UtcNow, not Now: this value gets persisted to OutcomeEvaluatedAt (a 'timestamp
+        // with time zone' column) below, and Npgsql only accepts UTC-offset DateTimeOffset
+        // values for that column type - same requirement LogTimeActivityTool hit. Safe to
+        // use for the in-memory Evaluate() bounding math too, since DateTimeOffset
+        // comparisons are always by UTC instant regardless of which offset a value carries.
+        var now = DateTimeOffset.UtcNow;
         var digests = new List<string>();
 
         foreach (var proposal in due)
@@ -201,21 +206,21 @@ public class CheckinSeedBuilder(AppDbContext db)
         var itemText = outcome.Items.Select(i =>
         {
             var pct = Math.Round(i.MatchedFraction * 100);
-            return i.Adherence switch
+            var label = ScheduleOutcomeEvaluator.OutcomeLabel(i.Adherence);
+            var detail = i.Adherence switch
             {
-                ScheduleOutcomeEvaluator.ItemAdherence.Followed =>
-                    $"{i.PlannedStart:HH:mm}-{i.PlannedEnd:HH:mm} {i.PlannedActivity}: followed ({pct}%)",
+                ScheduleOutcomeEvaluator.ItemAdherence.Followed => $"({pct}%)",
                 ScheduleOutcomeEvaluator.ItemAdherence.PartiallyFollowed =>
-                    $"{i.PlannedStart:HH:mm}-{i.PlannedEnd:HH:mm} {i.PlannedActivity}: partially followed " +
                     $"({pct}%), then drifted into {i.DivergedInto ?? "something else"}",
                 ScheduleOutcomeEvaluator.ItemAdherence.Diverged =>
-                    $"{i.PlannedStart:HH:mm}-{i.PlannedEnd:HH:mm} {i.PlannedActivity}: did " +
-                    $"{i.DivergedInto ?? "something else"} instead",
-                _ => $"{i.PlannedStart:HH:mm}-{i.PlannedEnd:HH:mm} {i.PlannedActivity}: skipped entirely",
+                    $"- did {i.DivergedInto ?? "something else"} instead",
+                _ => "- nothing tracked",
             };
+            return $"{i.PlannedStart:HH:mm}-{i.PlannedEnd:HH:mm} {i.PlannedActivity}: {label} {detail}";
         });
 
-        return $"- {outcome.Date:yyyy-MM-dd} '{outcome.Title}' (overall " +
-            $"{Math.Round(outcome.OverallAdherence * 100)}% followed): {string.Join("; ", itemText)}";
+        var overallLabel = ScheduleOutcomeEvaluator.OverallOutcomeLabel(outcome.OverallAdherence);
+        return $"- {outcome.Date:yyyy-MM-dd} '{outcome.Title}' (overall {overallLabel}, " +
+            $"{Math.Round(outcome.OverallAdherence * 100)}%): {string.Join("; ", itemText)}";
     }
 }

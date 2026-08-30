@@ -1,5 +1,6 @@
 using TimeTracker.Api.Dtos;
 using TimeTracker.Api.Services.AiTools;
+using TimeTracker.Api.Services.Scheduling;
 
 namespace TimeTracker.Api.Services;
 
@@ -16,7 +17,11 @@ public record AiAgentResult(string ResponseText, ScheduleProposalDto? Proposal, 
 /// never a model-supplied value), feeds results back, and repeats until
 /// Gemini returns a final text answer or the iteration cap is hit.
 /// </summary>
-public class AiAgentService(IGeminiService geminiService, AgentToolRegistry toolRegistry, ILogger<AiAgentService> logger)
+public class AiAgentService(
+    IGeminiService geminiService,
+    AgentToolRegistry toolRegistry,
+    SchedulePatternService schedulePatternService,
+    ILogger<AiAgentService> logger)
 {
     // Headroom for: observation call(s) -> propose_schedule -> (possibly rejected by
     // ScheduleValidation's past-start check) -> corrected retry -> final text.
@@ -104,24 +109,33 @@ public class AiAgentService(IGeminiService geminiService, AgentToolRegistry tool
         """;
 
     /// <summary>
-    /// Rebuilt per request (not cached) so the injected clock reading is always
-    /// fresh - this is what lets "I have 2 hours left" resolve against the actual
-    /// current time instead of a stale or generic default.
+    /// Rebuilt per request (not cached) so the injected clock reading is always fresh -
+    /// this is what lets "I have 2 hours left" resolve against the actual current time
+    /// instead of a stale or generic default. Also appends a deterministic summary of how
+    /// this user's past schedules actually went (SchedulePatternService), when there's
+    /// enough evaluated history to say anything - this is what closes the schedule
+    /// feedback loop on every turn, not just the proactive daily check-in.
     /// </summary>
-    private static string BuildSystemInstruction()
+    private async Task<string> BuildSystemInstructionAsync(Guid userId, CancellationToken cancellationToken)
     {
         // Server-local time: the app has no per-user timezone stored anywhere, so this
         // is the same "closest available proxy" convention the TimeRecord tools use
         // (see DateBoundaries) rather than UTC.
         var currentTime = DateTimeOffset.Now.ToString("dddd, yyyy-MM-dd HH:mm");
-        return SystemInstructionTemplate.Replace("{{CURRENT_TIME}}", currentTime);
+        var instruction = SystemInstructionTemplate.Replace("{{CURRENT_TIME}}", currentTime);
+
+        var patterns = await schedulePatternService.SummarizeRecentPatternsAsync(userId, cancellationToken);
+        if (patterns is not null)
+            instruction += "\n\n" + patterns;
+
+        return instruction;
     }
 
     public async Task<AiAgentResult> HandleUserMessageAsync(Guid userId, string userMessage, CancellationToken cancellationToken)
     {
         var history = new List<GeminiMessage> { GeminiMessage.FromText(GeminiRole.User, userMessage) };
         var tools = toolRegistry.Declarations;
-        var systemInstruction = BuildSystemInstruction();
+        var systemInstruction = await BuildSystemInstructionAsync(userId, cancellationToken);
         ScheduleProposalDto? proposal = null;
         ActivityOverviewDto? overview = null;
 
