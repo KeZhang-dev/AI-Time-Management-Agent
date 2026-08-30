@@ -22,6 +22,7 @@ import type { ScheduleProposal } from '@/types/schedule';
 import type { ActivityOverview, ProposalStatus } from '@/types/conversation';
 import { formatHoursAsClock, formatScheduleDate, formatTimeRangeDuration } from '@/lib/datetime';
 import { categoryBarColorVar } from '@/lib/categoryColor';
+import { getModelLabel } from '@/lib/aiModels';
 import { onNewChatRequested } from '@/lib/newChatSignal';
 import { notifyScheduleApplied } from '@/lib/scheduleAppliedSignal';
 import { cn } from '@/lib/utils';
@@ -109,6 +110,9 @@ interface ChatMessage {
     overview?: ActivityOverview;
     proposal?: ScheduleProposal;
     proposalStatus?: ProposalStatus;
+    /** Which provider answered ("gemini"/"deepseek") - absent for user messages and for
+     * assistant messages reloaded from history (not persisted server-side, live-turn only). */
+    providerId?: string;
 }
 
 function MarkdownContent({ content }: { content: string }) {
@@ -319,7 +323,7 @@ export function SolutionPage() {
         (async () => {
             setCheckingIn(true);
             try {
-                const { response, proposal, overview } = await checkIn();
+                const { response, proposal, overview, providerId } = await checkIn();
                 setMessages((prev) => [
                     ...prev,
                     {
@@ -330,6 +334,7 @@ export function SolutionPage() {
                         overview: overview ?? undefined,
                         proposal: proposal ?? undefined,
                         proposalStatus: proposal ? 'pending' : undefined,
+                        providerId,
                     },
                 ]);
             } catch {
@@ -407,7 +412,7 @@ export function SolutionPage() {
         setSubmitting(true);
 
         try {
-            const { response, proposal, overview } = await askAi(question);
+            const { response, proposal, overview, providerId } = await askAi(question);
             setMessages((prev) => [
                 ...prev,
                 {
@@ -418,6 +423,7 @@ export function SolutionPage() {
                     overview: overview ?? undefined,
                     proposal: proposal ?? undefined,
                     proposalStatus: proposal ? 'pending' : undefined,
+                    providerId,
                 },
             ]);
         } catch (err) {
@@ -512,8 +518,16 @@ export function SolutionPage() {
                                             <Logo size={16} />
                                         </div>
                                         <div className="flex max-w-[80%] flex-col gap-3">
-                                            <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3">
-                                                <MarkdownContent content={message.content} />
+                                            <div className="flex flex-col gap-1">
+                                                <div className="rounded-2xl rounded-tl-sm border border-border bg-surface px-4 py-3">
+                                                    <MarkdownContent content={message.content} />
+                                                </div>
+
+                                                {message.providerId && (
+                                                    <span className="pl-1 text-[10px] text-muted-foreground/50">
+                                                        {getModelLabel(message.providerId)}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {message.overview && <OverviewCard overview={message.overview} />}

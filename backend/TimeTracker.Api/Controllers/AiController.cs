@@ -13,7 +13,7 @@ namespace TimeTracker.Api.Controllers;
 [ApiController]
 [Route("api/ai")]
 public class AiController(
-    IGeminiService geminiService,
+    ILlmService llmService,
     AiAgentService aiAgentService,
     CheckinSeedBuilder checkinSeedBuilder,
     AppDbContext db,
@@ -24,7 +24,7 @@ public class AiController(
     {
         try
         {
-            var responseText = await geminiService.GenerateTextAsync(dto.Prompt, cancellationToken);
+            var responseText = await llmService.GenerateTextAsync(dto.Prompt, cancellationToken);
             return Ok(new AiTestResponseDto(responseText));
         }
         catch (InvalidOperationException ex)
@@ -57,7 +57,7 @@ public class AiController(
                 logger.LogError(ex, "Failed to persist conversation turn for user {UserId}", userId);
             }
 
-            return Ok(new AiAnalyzeResponseDto(result.ResponseText, result.Proposal, result.Overview));
+            return Ok(new AiAnalyzeResponseDto(result.ResponseText, result.Proposal, result.Overview, result.ProviderId));
         }
         catch (InvalidOperationException ex)
         {
@@ -92,7 +92,7 @@ public class AiController(
                 logger.LogError(ex, "Failed to persist check-in turn for user {UserId}", userId);
             }
 
-            return Ok(new AiAnalyzeResponseDto(result.ResponseText, result.Proposal, result.Overview));
+            return Ok(new AiAnalyzeResponseDto(result.ResponseText, result.Proposal, result.Overview, result.ProviderId));
         }
         catch (InvalidOperationException ex)
         {

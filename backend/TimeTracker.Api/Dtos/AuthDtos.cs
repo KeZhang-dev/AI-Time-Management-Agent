@@ -17,7 +17,8 @@ public record UserDto(
     string Username,
     string Role,
     string Name,
-    string? AvatarDataUrl
+    string? AvatarDataUrl,
+    string PreferredLlmProvider
 );
 
 public record AuthResponseDto(
@@ -31,4 +32,8 @@ public record UpdateNameRequestDto(
 
 public record UpdateAvatarRequestDto(
     [Required] string AvatarDataUrl
+);
+
+public record UpdatePreferredLlmProviderRequestDto(
+    [Required] string PreferredLlmProvider
 );

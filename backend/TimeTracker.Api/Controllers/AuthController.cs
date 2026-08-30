@@ -103,5 +103,31 @@ public class AuthController(AppDbContext db, JwtTokenService jwtTokenService) : 
         return Ok(ToDto(user));
     }
 
-    private static UserDto ToDto(User u) => new(u.Id, u.Username, u.Role, u.Name, u.AvatarDataUrl);
+    private static readonly HashSet<string> KnownLlmProviders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Gemini", "DeepSeek",
+    };
+
+    /// <summary>
+    /// Which ILlmService implementation answers this user's future chat requests -
+    /// resolved per-request from this stored value by Program.cs's ILlmService factory.
+    /// Takes effect immediately on the next request; nothing else needs to change.
+    /// </summary>
+    [Authorize]
+    [HttpPut("me/model")]
+    public async Task<ActionResult<UserDto>> UpdatePreferredLlmProvider(UpdatePreferredLlmProviderRequestDto dto)
+    {
+        if (!KnownLlmProviders.Contains(dto.PreferredLlmProvider))
+            return ValidationProblem("Unknown model provider.");
+
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return NotFound();
+
+        user.PreferredLlmProvider = dto.PreferredLlmProvider;
+        await db.SaveChangesAsync();
+        return Ok(ToDto(user));
+    }
+
+    private static UserDto ToDto(User u) => new(u.Id, u.Username, u.Role, u.Name, u.AvatarDataUrl, u.PreferredLlmProvider);
 }

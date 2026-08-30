@@ -12,6 +12,16 @@ export interface AiModelOption {
  */
 export const AI_MODEL_OPTIONS: AiModelOption[] = [
   { id: 'gemini', label: 'Gemini', version: 'Gemini 3.5 Flash-Lite' },
+  { id: 'deepseek', label: 'DeepSeek', version: 'DeepSeek V4 Flash' },
 ];
 
 export const DEFAULT_AI_MODEL_ID = AI_MODEL_OPTIONS[0].id;
+
+/**
+ * Display label for a provider id as returned by the backend (AiAnalyzeResponse.providerId,
+ * sourced from ILlmService.ProviderId - backend config/routing, never the model's own
+ * text). Falls back to the raw id if it's ever not (yet) listed above.
+ */
+export function getModelLabel(providerId: string): string {
+  return AI_MODEL_OPTIONS.find((option) => option.id === providerId)?.version ?? providerId;
+}

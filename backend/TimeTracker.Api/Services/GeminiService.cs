@@ -6,8 +6,10 @@ using TimeTracker.Api.Options;
 
 namespace TimeTracker.Api.Services;
 
-public class GeminiService(HttpClient httpClient, IOptions<GeminiOptions> geminiOptions) : IGeminiService
+public class GeminiService(HttpClient httpClient, IOptions<GeminiOptions> geminiOptions) : ILlmService
 {
+    public string ProviderId => "gemini";
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -47,9 +49,9 @@ public class GeminiService(HttpClient httpClient, IOptions<GeminiOptions> gemini
         return text;
     }
 
-    public async Task<GeminiTurn> GenerateContentAsync(
-        IReadOnlyList<GeminiMessage> history,
-        IReadOnlyList<GeminiToolDeclaration> tools,
+    public async Task<LlmTurn> GenerateContentAsync(
+        IReadOnlyList<LlmMessage> history,
+        IReadOnlyList<LlmToolDeclaration> tools,
         string? systemInstruction,
         CancellationToken cancellationToken = default)
     {
@@ -83,39 +85,39 @@ public class GeminiService(HttpClient httpClient, IOptions<GeminiOptions> gemini
 
         var functionCalls = parts
             .Where(p => p.FunctionCall is not null)
-            .Select(p => new GeminiFunctionCallInfo(p.FunctionCall!.Name, p.FunctionCall.Args ?? EmptyArgs)
+            .Select(p => new LlmFunctionCallInfo(p.FunctionCall!.Name, p.FunctionCall.Args ?? EmptyArgs)
             {
                 ThoughtSignature = p.ThoughtSignature,
             })
             .ToList();
 
         if (functionCalls.Count > 0)
-            return new GeminiTurn.FunctionCalls(functionCalls);
+            return new LlmTurn.FunctionCalls(functionCalls);
 
         var text = string.Concat(parts.Where(p => p.Text is not null).Select(p => p.Text));
 
         if (string.IsNullOrEmpty(text))
             throw new InvalidOperationException("Gemini API returned no content.");
 
-        return new GeminiTurn.Text(text);
+        return new LlmTurn.Text(text);
     }
 
-    private static string RoleToWire(GeminiRole role) => role switch
+    private static string RoleToWire(LlmRole role) => role switch
     {
-        GeminiRole.User => "user",
-        GeminiRole.Model => "model",
+        LlmRole.User => "user",
+        LlmRole.Model => "model",
         // This API's generateContent endpoint rejects role "function" (400
         // INVALID_ARGUMENT: "Role 'function' is not supported"); tool results
         // are sent back as a "user" turn carrying a functionResponse part instead.
-        GeminiRole.Function => "user",
+        LlmRole.Function => "user",
         _ => throw new ArgumentOutOfRangeException(nameof(role), role, null),
     };
 
-    private static GeminiToolContent ToWireContent(GeminiMessage message) => new(
+    private static GeminiToolContent ToWireContent(LlmMessage message) => new(
         RoleToWire(message.Role),
         message.Parts.Select(ToWirePart).ToList());
 
-    private static GeminiToolPart ToWirePart(GeminiMessagePart part) => new()
+    private static GeminiToolPart ToWirePart(LlmMessagePart part) => new()
     {
         Text = part.Text,
         FunctionCall = part.FunctionCall is null
@@ -130,7 +132,7 @@ public class GeminiService(HttpClient httpClient, IOptions<GeminiOptions> gemini
         ThoughtSignature = part.FunctionCall?.ThoughtSignature,
     };
 
-    private static GeminiFunctionDeclarationWire ToWireDeclaration(GeminiToolDeclaration declaration) => new(
+    private static GeminiFunctionDeclarationWire ToWireDeclaration(LlmToolDeclaration declaration) => new(
         declaration.Name, declaration.Description, declaration.ParametersSchema);
 
     // Wire format for the plain-text path (GenerateTextAsync) — unchanged from before.

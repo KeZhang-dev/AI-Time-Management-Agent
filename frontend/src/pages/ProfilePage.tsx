@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { updateAvatar, updateName } from '@/api/auth';
+import { updateAvatar, updateName, updatePreferredModel } from '@/api/auth';
 import { useAuth } from '@/context/AuthContext';
 import { AI_MODEL_OPTIONS, DEFAULT_AI_MODEL_ID } from '@/lib/aiModels';
 
@@ -31,12 +31,32 @@ export function ProfilePage() {
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
 
-    const [selectedModelId, setSelectedModelId] = useState(DEFAULT_AI_MODEL_ID);
+    const [selectedModelId, setSelectedModelId] = useState(() => {
+        const preferred = user?.preferredLlmProvider?.toLowerCase();
+        return AI_MODEL_OPTIONS.find((option) => option.id === preferred)?.id ?? DEFAULT_AI_MODEL_ID;
+    });
+    const [savingModel, setSavingModel] = useState(false);
+    const [modelError, setModelError] = useState<string | null>(null);
 
     if (!user) return null;
 
     const selectedModel =
         AI_MODEL_OPTIONS.find((option) => option.id === selectedModelId) ?? AI_MODEL_OPTIONS[0];
+
+    const handleSelectModel = async (optionId: string) => {
+        if (optionId === selectedModelId || savingModel) return;
+        setModelError(null);
+        setSavingModel(true);
+        try {
+            const updated = await updatePreferredModel(optionId);
+            updateUser(updated);
+            setSelectedModelId(optionId);
+        } catch (err) {
+            setModelError(err instanceof Error ? err.message : 'Failed to update model.');
+        } finally {
+            setSavingModel(false);
+        }
+    };
 
     const startEditingName = () => {
         setNameDraft(user.name || user.username);
@@ -191,19 +211,22 @@ export function ProfilePage() {
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 type="button"
-                                className="flex w-full max-w-sm items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-colors hover:bg-accent/60 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                disabled={savingModel}
+                                className="flex w-full max-w-sm items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none transition-colors hover:bg-accent/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
                             >
                                 <span className="font-medium text-foreground">{selectedModel.version}</span>
                                 <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="min-w-56 scrollbar-subtle">
                                 {AI_MODEL_OPTIONS.map((option) => (
-                                    <DropdownMenuItem key={option.id} onSelect={() => setSelectedModelId(option.id)}>
+                                    <DropdownMenuItem key={option.id} onSelect={() => void handleSelectModel(option.id)}>
                                         {option.version}
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        {modelError && <p className="mt-2 text-sm text-destructive">{modelError}</p>}
 
                         <p className="mt-3 text-xs text-muted-foreground/70">
                             More models will be available in the future.

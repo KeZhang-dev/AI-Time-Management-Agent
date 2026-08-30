@@ -13,5 +13,12 @@ public class User
     /// <summary>Avatar image as a data URL (e.g. "data:image/png;base64,...") - no separate blob storage exists yet.</summary>
     public string? AvatarDataUrl { get; set; }
 
+    /// <summary>
+    /// Which ILlmService implementation answers this user's chat requests - "Gemini" or
+    /// "DeepSeek" (case-insensitive), resolved per-request by Program.cs's ILlmService
+    /// factory. Falls back to the server-wide Llm:Provider config value if unrecognized.
+    /// </summary>
+    public string PreferredLlmProvider { get; set; } = "Gemini";
+
     public DateTimeOffset CreatedAt { get; set; }
 }

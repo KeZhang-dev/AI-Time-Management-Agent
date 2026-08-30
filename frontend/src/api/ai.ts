@@ -6,6 +6,8 @@ export interface AiAnalyzeResponse {
   response: string;
   proposal: ScheduleProposal | null;
   overview: ActivityOverview | null;
+  /** Which provider actually answered ("gemini"/"deepseek") - backend config/routing metadata, not model-generated text. */
+  providerId: string;
 }
 
 export function askAi(message: string): Promise<AiAnalyzeResponse> {

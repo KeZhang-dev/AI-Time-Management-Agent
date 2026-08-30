@@ -32,3 +32,10 @@ export function updateAvatar(avatarDataUrl: string): Promise<AuthUser> {
         body: JSON.stringify({ avatarDataUrl }),
     });
 }
+
+export function updatePreferredModel(preferredLlmProvider: string): Promise<AuthUser> {
+    return apiFetch<AuthUser>('/auth/me/model', {
+        method: 'PUT',
+        body: JSON.stringify({ preferredLlmProvider }),
+    });
+}

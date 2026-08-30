@@ -4,6 +4,7 @@ export interface AuthUser {
     role: string;
     name: string;
     avatarDataUrl: string | null;
+    preferredLlmProvider: string;
 }
 
 export interface AuthResponse {

@@ -6,19 +6,22 @@ namespace TimeTracker.Api.Services;
 
 /// <summary>
 /// Result of one agent turn: the text reply, plus a staged schedule proposal and/or
-/// an activity overview snapshot if the tool loop produced one. Both are purely for
-/// display - neither changes how the tool-calling loop itself behaves.
+/// an activity overview snapshot if the tool loop produced one, plus which provider
+/// actually answered (display metadata only - sourced from the resolved ILlmService,
+/// never from the model's own generated text, and never fed back into routing).
 /// </summary>
-public record AiAgentResult(string ResponseText, ScheduleProposalDto? Proposal, ActivityOverviewDto? Overview);
+public record AiAgentResult(string ResponseText, ScheduleProposalDto? Proposal, ActivityOverviewDto? Overview, string ProviderId);
 
 /// <summary>
-/// Drives the tool-calling loop: sends the user's message to Gemini, executes
-/// any tools Gemini requests (always scoped to the caller-supplied userId,
-/// never a model-supplied value), feeds results back, and repeats until
-/// Gemini returns a final text answer or the iteration cap is hit.
+/// Drives the tool-calling loop: sends the user's message to the configured LLM
+/// provider (Gemini or DeepSeek, behind ILlmService), executes any tools it
+/// requests (always scoped to the caller-supplied userId, never a model-supplied
+/// value), feeds results back, and repeats until the model returns a final text
+/// answer or the iteration cap is hit. Provider-agnostic - nothing here knows or
+/// cares which concrete ILlmService implementation is behind it.
 /// </summary>
 public class AiAgentService(
-    IGeminiService geminiService,
+    ILlmService llmService,
     AgentToolRegistry toolRegistry,
     SchedulePatternService schedulePatternService,
     ILogger<AiAgentService> logger)
@@ -133,7 +136,7 @@ public class AiAgentService(
 
     public async Task<AiAgentResult> HandleUserMessageAsync(Guid userId, string userMessage, CancellationToken cancellationToken)
     {
-        var history = new List<GeminiMessage> { GeminiMessage.FromText(GeminiRole.User, userMessage) };
+        var history = new List<LlmMessage> { LlmMessage.FromText(LlmRole.User, userMessage) };
         var tools = toolRegistry.Declarations;
         var systemInstruction = await BuildSystemInstructionAsync(userId, cancellationToken);
         ScheduleProposalDto? proposal = null;
@@ -141,19 +144,19 @@ public class AiAgentService(
 
         for (var iteration = 0; iteration < MaxToolIterations; iteration++)
         {
-            var turn = await geminiService.GenerateContentAsync(history, tools, systemInstruction, cancellationToken);
+            var turn = await llmService.GenerateContentAsync(history, tools, systemInstruction, cancellationToken);
 
-            if (turn is GeminiTurn.Text text)
-                return new AiAgentResult(text.Content, proposal, overview);
+            if (turn is LlmTurn.Text text)
+                return new AiAgentResult(text.Content, proposal, overview, llmService.ProviderId);
 
-            var calls = ((GeminiTurn.FunctionCalls)turn).Calls;
+            var calls = ((LlmTurn.FunctionCalls)turn).Calls;
 
             foreach (var call in calls)
-                logger.LogInformation("Gemini requested tool {ToolName} with args {Args}", call.Name, call.Args);
+                logger.LogInformation("Model requested tool {ToolName} with args {Args}", call.Name, call.Args);
 
-            history.Add(new GeminiMessage(
-                GeminiRole.Model,
-                calls.Select(c => new GeminiMessagePart { FunctionCall = c }).ToList()));
+            history.Add(new LlmMessage(
+                LlmRole.Model,
+                calls.Select(c => new LlmMessagePart { FunctionCall = c }).ToList()));
 
             foreach (var call in calls)
             {
@@ -175,13 +178,14 @@ public class AiAgentService(
                     result = new { error = $"Tool '{call.Name}' failed: {ex.Message}" };
                 }
 
-                history.Add(GeminiMessage.FromFunctionResponse(call.Name, result));
+                history.Add(LlmMessage.FromFunctionResponse(call.Name, result, call.Id));
             }
         }
 
         return new AiAgentResult(
             "I wasn't able to finish looking that up just now — could you try rephrasing your question?",
             proposal,
-            overview);
+            overview,
+            llmService.ProviderId);
     }
 }

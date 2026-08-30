@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
@@ -33,7 +34,37 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddSingleton<JwtTokenService>();
 
 builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection("Gemini"));
-builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+builder.Services.Configure<DeepSeekOptions>(builder.Configuration.GetSection("DeepSeek"));
+builder.Services.AddHttpClient<GeminiService>();
+builder.Services.AddHttpClient<DeepSeekService>();
+builder.Services.AddHttpContextAccessor();
+
+// Which concrete ILlmService backs a given request - resolved per-request from the
+// authenticated user's stored PreferredLlmProvider (AuthController's PUT /me/model is
+// the only way that value changes), falling back to the server-wide Llm:Provider config
+// value when there's no authenticated user, no stored preference, or an unrecognized
+// one. AiAgentService/AiController stay unaware of any of this - they just inject
+// ILlmService like any other dependency.
+builder.Services.AddScoped<ILlmService>(sp =>
+{
+    var defaultProvider = builder.Configuration["Llm:Provider"] ?? "Gemini";
+
+    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+    var userIdClaim = httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    var provider = defaultProvider;
+    if (userIdClaim is not null && Guid.TryParse(userIdClaim, out var userId))
+    {
+        var db = sp.GetRequiredService<AppDbContext>();
+        var preferred = db.Users.Where(u => u.Id == userId).Select(u => u.PreferredLlmProvider).FirstOrDefault();
+        if (preferred is not null)
+            provider = preferred;
+    }
+
+    return string.Equals(provider, "DeepSeek", StringComparison.OrdinalIgnoreCase)
+        ? sp.GetRequiredService<DeepSeekService>()
+        : sp.GetRequiredService<GeminiService>();
+});
 
 builder.Services.AddScoped<IAgentTool, GetTodayRecordsTool>();
 builder.Services.AddScoped<IAgentTool, GetRecentRecordsTool>();
