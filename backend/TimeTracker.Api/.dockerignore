@@ -1,0 +1,35 @@
+# Build output - the Dockerfile builds fresh inside the image, host build artifacts
+# would only bloat the context and risk shadowing what the container itself produces.
+**/bin/
+**/obj/
+
+# IDE / editor
+**/.vs/
+**/.vscode/
+*.user
+*.suo
+
+# Git
+**/.git/
+**/.gitignore
+
+# Docker itself - no need to copy these into their own build context
+Dockerfile
+.dockerignore
+
+# OS junk
+**/.DS_Store
+**/Thumbs.db
+
+# Local-only / secret-adjacent files - defense in depth. None of these should exist in
+# this directory (real secrets live in User Secrets or deploy-time env vars, never in
+# tracked files), but they must never be copied into the image if they somehow do.
+**/appsettings.Development.json
+**/appsettings.*.local.json
+**/secrets.json
+**/*.env
+**/.env
+**/.env.*
+
+# READMEs and docs aren't needed at runtime
+**/*.md
